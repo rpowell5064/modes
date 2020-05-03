@@ -1,0 +1,40 @@
+.App {
+  text-align: center;
+}
+
+ul {
+  list-style-type: none;
+  height: auto;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #27414b;
+  position: fixed;
+  z-index: 999999;
+}
+
+li {
+  display: inline;
+  color: #ffffff;
+  padding: 2vw 1vw;
+  text-decoration: none;
+}
+
+.button {
+  background-color: #5a747a;
+  border: none;
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 2px 2px;
+  cursor: pointer;
+}
+
+@media only screen and (max-width: 600px) {
+  #rotate-button {
+    display: none;
+  }
+}

@@ -1,0 +1,64 @@
+.grid {
+    display: flex;
+    margin-left: auto;
+    margin-right: auto;
+    width: 375px;
+    background-color: #333333;
+    border-bottom: 4px solid #b3b3b3;
+    border-style: inset;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.24);
+  }
+
+  .nut {
+    display: flex;
+    margin-left: auto;
+    margin-right: auto;
+    width: 375px;
+    border-bottom: 8px solid #ffffff;
+  }
+  
+  .grid:hover, .nut:hover {
+    background-color: #696969;
+  }
+  
+  .col {
+    flex: 1;
+  }
+  
+  .fretboard {
+    width: fit-content;
+    margin: auto;
+    transform: perspective(800px) rotateY(0deg) scale(0.95);
+    transition: transform 0.60s ease-out;
+    transform-origin: 25px;
+    transform-style: preserve-3d;
+  }
+
+  .string {
+    border-left: 2px solid #b3b3b3;
+    width: 2px;
+    height: 14px;
+    margin: auto;
+  }
+  
+  .binding {
+    background-color: #f5deb3;
+    min-width: 19px;
+    line-height: 60px;
+    margin: 0 0 0 0;
+  }
+
+  .no-binding {
+    min-width: 19px;
+    line-height: 60px;
+    margin: 0 0 0 0;
+  }
+
+  .perspective {
+    transform: perspective(800px) rotateY(15deg) scale(0.95);
+  }
+  
+  .horizontal {
+    transform: perspective(800px) translateY(-500px) rotate(-90deg) scale(0.75);
+    transform-origin: center center;
+  }

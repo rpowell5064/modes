@@ -1,0 +1,19 @@
+.note {
+    height: 30px;
+    width: 30px;
+    background-color: #bbbbbb;
+    border-radius: 50%;
+    border-width: 1px;
+    border-style: solid;
+    display: inline-block;
+    line-height: 30px;
+}
+
+.note:hover {
+    border-color: #32cd32;
+    cursor: pointer;
+}
+
+.note:active, .marked {
+    background-color: #adff2f;  
+}
