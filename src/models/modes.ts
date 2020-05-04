@@ -6,6 +6,7 @@ export class Modes {
             this.phyrgian(),
             this.lydian(),
             this.mixolydian(),
+            this.aeolian(),
             this.locrian()
         ];
     }
