@@ -4,7 +4,7 @@
     background-color: #bbbbbb;
     border-radius: 5px;
     border-width: 1px;
-    opacity: 50%;
+    opacity: 0.5;
     border-style: solid;
     display: inline-block;
     line-height: 30px;
@@ -17,7 +17,7 @@
 
 .note:active, .marked {
     background-color: #adff2f;
-    opacity: 100%;
+    opacity: 1;
 }
 
 .octave { 
