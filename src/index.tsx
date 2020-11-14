@@ -3,10 +3,14 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
+import Helmet from 'react-helmet';
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <Helmet>
+      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
+    </Helmet>
+    <App/>
   </React.StrictMode>,
   document.getElementById('root')
 );
