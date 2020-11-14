@@ -46,7 +46,7 @@ export class Fretboard extends React.Component<IFretboard> {
     const notes = intervals.map((interval, key) =>
       <div className='col' key={ key }>
         <div className='string'></div>
-        <Note value={ interval } marked={ this.isMarked(interval) } guitarService={ this.guitarService }></Note>
+        <Note value={ interval } marked={ this.isMarked(interval) } keySig={ this.props.keySig } guitarService={ this.guitarService }></Note>
         <div className='string'></div>
       </div>
     );

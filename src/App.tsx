@@ -60,20 +60,20 @@ export default class App extends React.Component<{}, IModeState> {
       <div className="App">
         <ul>
           <li>
-            <label htmlFor='key-select'>
+            <label className="drop-down-label" htmlFor='key-select'>
               Key:
-              <select id='key-select' value={ this.state.keySig } onChange={ this.handleKeySigChange.bind(this) }>
-                { keys }
-              </select>
             </label>
+            <select id='key-select' value={ this.state.keySig } onChange={ this.handleKeySigChange.bind(this) }>
+                { keys }
+            </select>
           </li>
           <li>
-            <label htmlFor='mode-select'>
+            <label className="drop-down-label" htmlFor='mode-select'>
               Mode:
-              <select id='mode-select' value={ this.state.mode } onChange={ this.handleModeChange.bind(this) }>
-                { modes }
-              </select>
             </label>
+            <select id='mode-select' value={ this.state.mode } onChange={ this.handleModeChange.bind(this) }>
+                { modes }
+            </select>
           </li>
           <li>
             <button id='rotate-button' type='button' className='button' onClick={ this.rotate }>Rotate</button>

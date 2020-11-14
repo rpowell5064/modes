@@ -2,8 +2,9 @@
     height: 30px;
     width: 30px;
     background-color: #bbbbbb;
-    border-radius: 50%;
+    border-radius: 5px;
     border-width: 1px;
+    opacity: 50%;
     border-style: solid;
     display: inline-block;
     line-height: 30px;
@@ -15,5 +16,10 @@
 }
 
 .note:active, .marked {
-    background-color: #adff2f;  
+    background-color: #adff2f;
+    opacity: 100%;
+}
+
+.octave { 
+    background-color: #ff0000;  
 }

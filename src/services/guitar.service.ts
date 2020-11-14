@@ -45,8 +45,10 @@ export class GuitarService {
     
         guitarNote.connect(filter);
 
-        setTimeout(function() { guitarNote.disconnect() }, 2000);
-        setTimeout(function() { filter.disconnect() }, 2000);
+        setTimeout(function() { 
+            guitarNote.disconnect();
+            filter.disconnect();
+        }, 2000);
 
         return filter
     }

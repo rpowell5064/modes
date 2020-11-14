@@ -5,7 +5,7 @@ import { GuitarService } from '../../services/guitar.service';
 import 'classnames';
 import classNames from 'classnames';
 
-interface INote { value: number, marked?: boolean, guitarService: GuitarService }
+interface INote { value: number, marked?: boolean, keySig: number, guitarService: GuitarService }
 
 export class Note extends React.Component<INote> {
 
@@ -21,7 +21,11 @@ export class Note extends React.Component<INote> {
     }
 
     render() {
-        const classes = classNames('note', { marked: this.props.marked });
+        const classes = classNames('note', {
+            'marked': this.props.marked,
+            'octave': NoteNames.get(this.props.value) === NoteNames.get(this.props.keySig)
+        });
+
         const noteName = NoteNames.get(this.props.value);
         return <div className={ classes } onClick={ this.handleClick } title={ noteName }>{ noteName }</div>
     }
