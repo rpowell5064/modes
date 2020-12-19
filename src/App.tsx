@@ -79,7 +79,7 @@ export default class App extends React.Component<{}, IModeState> {
             <button id='rotate-button' type='button' className='button' onClick={ this.rotate }>Rotate</button>
           </li>
           <li>
-            <button type='button' className='button' onClick={ this.perspective }>Perspective</button>
+            <button id="perspective-button" type='button' className='button' onClick={ this.perspective }>Perspective</button>
           </li>
         </ul>
         <Fretboard 
