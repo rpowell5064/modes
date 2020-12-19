@@ -69,7 +69,7 @@ export default class App extends React.Component<{}, IModeState> {
           </li>
           <li>
             <label className="drop-down-label" htmlFor='mode-select'>
-              Mode:
+              Scale:
             </label>
             <select id='mode-select' value={ this.state.mode } onChange={ this.handleModeChange.bind(this) }>
                 { modes }
