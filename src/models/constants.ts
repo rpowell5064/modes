@@ -82,6 +82,22 @@ export class Constants {
             {
                 key: 6,
                 value: 'Locrian'
+            },
+            {
+                key: 7,
+                value: 'Major Pentatonic'
+            },
+            {
+                key: 8,
+                value: 'Minor Pentatonic'
+            },
+            {
+                key: 9,
+                value: 'Blues Pentatonic'
+            },
+            {
+                key: 10,
+                value: 'Harmonic Minor'
             }
         ];
     }

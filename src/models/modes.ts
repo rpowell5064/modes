@@ -7,7 +7,11 @@ export class Modes {
             this.lydian(),
             this.mixolydian(),
             this.aeolian(),
-            this.locrian()
+            this.locrian(),
+            this.majorPentatonic(),
+            this.minorPentatonic(),
+            this.bluesPentatonic(),
+            this.harmonicMinor()
         ];
     }
 
@@ -44,5 +48,23 @@ export class Modes {
     static locrian(): Array<number> {
         // h w w h w w w
         return [0, 1, 3, 5, 6, 8, 10, 12];
+    }
+
+    static majorPentatonic(): Array<number> {
+        // 1 - 2 - 3 - 5 - 6
+        return [0, 2, 4, 7, 9, 12];
+    }
+
+    static minorPentatonic(): Array<number> {
+        // 1 - b3 - 4 - 5 - b7
+        return [0, 3, 5, 7, 10, 12];
+    }
+
+    static bluesPentatonic(): Array<number> {
+        return [0, 3, 5, 6, 7, 10, 12];
+    }
+
+    static harmonicMinor(): Array<number> {
+        return [0, 2, 3, 5, 7, 8, 11, 12];
     }
 }
