@@ -22,12 +22,7 @@
   border-radius: 8px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.65);
   overflow: hidden;
-  transform: perspective(1200px) rotateX(0deg) scale(0.97);
-  transition: transform 0.55s ease-out;
-}
-
-.perspective {
-  transform: perspective(1200px) rotateX(-6deg) rotateY(6deg) scale(0.95);
+  position: relative;
 }
 
 /* ── Fret-number header row ───────────────────────────────────────────────── */
@@ -164,4 +159,87 @@
   border-radius: 50%;
   background: #252e3f;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Pattern legend ───────────────────────────────────────────────────────── */
+.fb-pattern-legend {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 40px;
+  background: #0d1117;
+  border-top: 1px solid #21282f;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Prev / Next nav sits in the open-cell area */
+.fb-legend-nav {
+  width: var(--fb-open-w);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.fb-legend-arrow {
+  background: none;
+  border: 1px solid #2a3547;
+  border-radius: 4px;
+  color: #5a7a90;
+  font-size: 18px;
+  line-height: 1;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.12s, border-color 0.12s;
+}
+
+.fb-legend-arrow:hover {
+  color: #a0c0d8;
+  border-color: #4a6a80;
+}
+
+/* Chip container fills the remaining fret-column area */
+.fb-legend-chips {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  overflow: visible;
+}
+
+.fb-pattern-chip {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 3px 9px;
+  border-radius: 20px;
+  border: 1.5px solid;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+  user-select: none;
+  line-height: 1.4;
+}
+
+.fb-pattern-chip:hover {
+  transform: translate(-50%, -60%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.fb-pattern-chip.solo {
+  transform: translate(-50%, -60%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+.fb-pattern-chip.dimmed {
+  opacity: 0.2;
 }

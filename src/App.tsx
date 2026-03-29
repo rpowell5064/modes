@@ -4,10 +4,10 @@ import { Fretboard } from './components/fretboard/Fretboard';
 import { ChordSection } from './components/chords/ChordSection';
 import { ProgressionSection } from './components/chords/ProgressionSection';
 import { Constants } from './models/constants';
-import { GuitarService, SoundMode } from './services/guitar.service';
+import { GuitarService } from './services/guitar.service';
 
 interface IMode { keySig: number, mode: number };
-interface IModeState { keySig: number, mode: number, numOfStrings: number, tuning: number[], soundMode: SoundMode };
+interface IModeState { keySig: number, mode: number, numOfStrings: number, tuning: number[], showPattern: boolean };
 
 const DEFAULT_TUNINGS: Record<number, number[]> = {
   6: [40, 45, 50, 55, 59, 64],
@@ -35,17 +35,8 @@ export default class App extends React.Component<{}, IModeState> {
       mode: 0,
       numOfStrings: 6,
       tuning: DEFAULT_TUNINGS[6],
-      soundMode: 'clean',
+      showPattern: true,
     } as IModeState;
-  }
-
-  perspective(): void {
-    const fretboard = document.getElementsByClassName('fretboard')[0];
-    if (fretboard && !fretboard.classList.contains('perspective')) {
-      fretboard.classList.add('perspective');
-    } else {
-      fretboard.classList.remove('perspective');
-    }
   }
 
   handleKeySigChange(event: React.FormEvent<HTMLSelectElement>): void {
@@ -59,10 +50,6 @@ export default class App extends React.Component<{}, IModeState> {
   handleStringsChange(event: React.FormEvent<HTMLSelectElement>): void {
     const numOfStrings = +event.currentTarget.value;
     this.setState({ numOfStrings, tuning: DEFAULT_TUNINGS[numOfStrings] });
-  }
-
-  handleSoundModeChange(event: React.FormEvent<HTMLSelectElement>): void {
-    this.setState({ soundMode: event.currentTarget.value as SoundMode });
   }
 
   handleTuningChange(stringIndex: number, noteClass: number): void {
@@ -117,23 +104,20 @@ export default class App extends React.Component<{}, IModeState> {
               </select>
             </div>
             <div className="nav-control-group">
-              <label className="nav-label" htmlFor='sound-select'>Sound</label>
-              <select id='sound-select' value={ this.state.soundMode } onChange={ this.handleSoundModeChange.bind(this) }>
-                <option value='clean'>Clean</option>
-                <option value='distorted'>Distorted</option>
+              <label className="nav-label" htmlFor='strings-select'>Strings</label>
+              <select id='strings-select' value={ this.state.numOfStrings } onChange={ this.handleStringsChange.bind(this) }>
+                <option value={ 6 }>6</option>
+                <option value={ 7 }>7</option>
+                <option value={ 8 }>8</option>
               </select>
             </div>
             <div className="nav-control-group">
-              <label className="nav-label" htmlFor='strings-select'>Strings</label>
-              <select id='strings-select' value={ this.state.numOfStrings } onChange={ this.handleStringsChange.bind(this) }>
-                <option value={ 6 }>6 String</option>
-                <option value={ 7 }>7 String</option>
-                <option value={ 8 }>8 String</option>
-              </select>
-            </div>
-            <div className="nav-control-group" id="perspective-group">
-              <button id="perspective-button" type='button' className='button' onClick={ this.perspective }>
-                Perspective
+              <button
+                type='button'
+                className={`button${this.state.showPattern ? ' active' : ''}`}
+                onClick={ () => this.setState(s => ({ showPattern: !s.showPattern })) }
+              >
+                Pattern
               </button>
             </div>
           </div>
@@ -150,8 +134,9 @@ export default class App extends React.Component<{}, IModeState> {
             keySig={ this.state.keySig }
             mode={ this.state.mode }
             tuning={ this.state.tuning }
-            soundMode={ this.state.soundMode }
+            soundMode='clean'
             guitarService={ this.guitarService }
+            showPattern={ this.state.showPattern }
           />
         </div>
 
@@ -160,14 +145,14 @@ export default class App extends React.Component<{}, IModeState> {
           scaleIndex={ this.state.mode }
           tuning={ this.state.tuning }
           guitarService={ this.guitarService }
-          soundMode={ this.state.soundMode }
+          soundMode='clean'
         />
 
         <ProgressionSection
           keySig={ this.state.keySig }
           tuning={ this.state.tuning }
           guitarService={ this.guitarService }
-          soundMode={ this.state.soundMode }
+          soundMode='clean'
         />
 
       </div>

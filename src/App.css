@@ -17,6 +17,7 @@
   padding-top: calc(var(--nav-h) + var(--tuning-h));
   background: var(--bg-base);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* ── Fretboard area — centered, horizontally scrollable ──────────────────── */
@@ -24,6 +25,7 @@
   display: flex;
   justify-content: center;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 28px 24px 0;
 }
 
@@ -154,7 +156,57 @@
   color: var(--text-1);
 }
 
-/* ── Perspective button ──────────────────────────────────────────────────── */
+/* ── Mobile layout ───────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  :root {
+    --nav-h: 48px;
+    --tuning-h: 34px;
+  }
+
+  .app-nav {
+    padding: 0 12px;
+  }
+
+  .nav-brand {
+    gap: 6px;
+  }
+
+  .nav-icon {
+    font-size: 18px;
+  }
+
+  .nav-title {
+    font-size: 13px;
+  }
+
+  .nav-control-group {
+    padding: 0 10px;
+  }
+
+  .app-nav select {
+    font-size: 12px;
+    min-width: 52px;
+  }
+
+  .fretboard-area {
+    padding: 16px 0 0;
+    /* allow the fretboard to scroll horizontally without the page following */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tuning-bar {
+    gap: 2px;
+    padding: 0 8px;
+  }
+
+  .tuning-select {
+    width: 42px;
+    font-size: 11px;
+  }
+}
+
+/* ── Nav button ──────────────────────────────────────────────────────────── */
 .button {
   background: transparent;
   border: 1px solid var(--border);
@@ -164,7 +216,7 @@
   font-weight: 500;
   padding: 5px 12px;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
   white-space: nowrap;
 }
 
@@ -173,8 +225,8 @@
   color: var(--text-1);
 }
 
-@media (max-width: 768px) {
-  #perspective-group {
-    display: none;
-  }
+.button.active {
+  border-color: #b89a2a;
+  color: #fde047;
+  background: rgba(253, 224, 71, 0.08);
 }

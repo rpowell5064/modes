@@ -46,17 +46,6 @@ export class GuitarService {
         return source;
     }
 
-    // tanh soft-clipping / saturation curve — models tube overdrive
-    private makeDistortionCurve(drive: number): Float32Array {
-        const n = 512;
-        const curve = new Float32Array(n);
-        for (let i = 0; i < n; i++) {
-            const x = (i * 2) / n - 1;
-            curve[i] = Math.tanh(x * drive);
-        }
-        return curve;
-    }
-
     private buildCleanChain(source: AudioNode): AudioNode {
         const ctx = this.audioContext;
 
@@ -100,98 +89,40 @@ export class GuitarService {
         return output;
     }
 
-    private buildDistortedChain(source: AudioNode): AudioNode {
+    /** Play a note at a precise Web Audio clock time with a fixed sustain duration.
+     *  Used by the progression looper so notes cut off cleanly before the next strum. */
+    playNoteAt(note: number, mode: SoundMode, startTime: number, noteDuration: number): void {
         const ctx = this.audioContext;
+        const source = this.createKarplusStrong(note, 0.45, 0.9994);
+        const chain  = this.buildCleanChain(source);
 
-        // Tight high-pass before gain stage — signature EVH 5150 punchy low end
-        const inputHP = ctx.createBiquadFilter();
-        inputHP.type = 'highpass';
-        inputHP.frequency.value = 120;
-        inputHP.Q.value = 0.65;
+        const masterGain  = ctx.createGain();
+        const releaseTime = 0.10;
 
-        // Tube saturation — drive reduced from 30 to keep harmonic richness
-        // without turning the plucked string into a continuously bowed tone
-        const saturator = ctx.createWaveShaper();
-        saturator.curve = this.makeDistortionCurve(18);
-        saturator.oversample = '4x'; // prevents aliasing from clipping
+        masterGain.gain.setValueAtTime(1, startTime);
+        masterGain.gain.setValueAtTime(1, startTime + noteDuration);
+        masterGain.gain.exponentialRampToValueAtTime(0.0001, startTime + noteDuration + releaseTime);
 
-        // Post-clip HP — removes DC offset and sub-bass artifacts
-        const postHP = ctx.createBiquadFilter();
-        postHP.type = 'highpass';
-        postHP.frequency.value = 85;
-        postHP.Q.value = 0.7;
+        chain.connect(masterGain);
+        masterGain.connect(ctx.destination);
+        source.start(startTime);
 
-        // Mid scoop — 5150's characteristic V-shaped EQ
-        const midScoop = ctx.createBiquadFilter();
-        midScoop.type = 'peaking';
-        midScoop.frequency.value = 480;
-        midScoop.Q.value = 1.0;
-        midScoop.gain.value = -10;
-
-        // Celestion V30 cabinet low-mid thump
-        const cabLow = ctx.createBiquadFilter();
-        cabLow.type = 'peaking';
-        cabLow.frequency.value = 130;
-        cabLow.Q.value = 2.5;
-        cabLow.gain.value = 6;
-
-        // Presence edge — 5150 presence knob characteristic
-        const presence = ctx.createBiquadFilter();
-        presence.type = 'peaking';
-        presence.frequency.value = 3200;
-        presence.Q.value = 1.2;
-        presence.gain.value = 7;
-
-        // 4x12 cabinet high rolloff (V30 natural response)
-        const cabCut = ctx.createBiquadFilter();
-        cabCut.type = 'lowpass';
-        cabCut.frequency.value = 5800;
-        cabCut.Q.value = 0.5;
-
-        // Tight compression — high-gain amp natural behavior
-        const comp = ctx.createDynamicsCompressor();
-        comp.threshold.value = -12;
-        comp.knee.value = 3;
-        comp.ratio.value = 12;
-        comp.attack.value = 0.0005;
-        comp.release.value = 0.04;
-
-        const output = ctx.createGain();
-        output.gain.value = 0.55;
-
-        source.connect(inputHP);
-        inputHP.connect(saturator);
-        saturator.connect(postHP);
-        postHP.connect(midScoop);
-        midScoop.connect(cabLow);
-        cabLow.connect(presence);
-        presence.connect(cabCut);
-        cabCut.connect(comp);
-        comp.connect(output);
-
-        return output;
+        const cleanupMs = (startTime - ctx.currentTime + noteDuration + releaseTime + 0.3) * 1000;
+        setTimeout(() => {
+            try { source.stop();        } catch (_) {}
+            try { source.disconnect();  } catch (_) {}
+            try { masterGain.disconnect(); } catch (_) {}
+        }, Math.max(cleanupMs, 50));
     }
 
     playNote(note: number, mode: SoundMode): void {
         const ctx = this.audioContext;
-        const isDistorted = mode === 'distorted';
+        const source = this.createKarplusStrong(note, 0.45, 0.9994);
+        const chain = this.buildCleanChain(source);
 
-        // Distorted: brighter excitation so attack cuts through saturation.
-        // Decay must be lower for distorted — decay=0.999 sustains so long that
-        // heavy clipping produces a continuous clipped sine (violin-like).
-        // A shorter natural decay lets the note pluck and fade like a real guitar.
-        const brightness = isDistorted ? 0.3 : 0.45;
-        const decay = isDistorted ? 0.996 : 0.9994;
-
-        const source = this.createKarplusStrong(note, brightness, decay);
-        const chain = isDistorted
-            ? this.buildDistortedChain(source)
-            : this.buildCleanChain(source);
-
-        // Smooth note envelope: sustain → exponential release
         const masterGain = ctx.createGain();
-        const sustainTime = isDistorted ? 1.2 : 2.0;
-        const releaseTime = isDistorted ? 0.5 : 1.5;
+        const sustainTime = 2.0;
+        const releaseTime = 1.5;
 
         masterGain.gain.setValueAtTime(1, ctx.currentTime);
         masterGain.gain.setValueAtTime(1, ctx.currentTime + sustainTime);
