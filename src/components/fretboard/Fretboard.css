@@ -1,64 +1,167 @@
-.grid {
-    display: flex;
-    margin-left: auto;
-    margin-right: auto;
-    width: 375px;
-    background-color: #333333;
-    border-bottom: 4px solid #b3b3b3;
-    border-style: inset;
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.24);
-  }
+/* ═══════════════════════════════════════════════════════════════════════════
+   Fretboard — flat dark design, full-width
+   Strings run left-to-right. High e at top, low E at bottom.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-  .nut {
-    display: flex;
-    margin-left: auto;
-    margin-right: auto;
-    width: 375px;
-    border-bottom: 8px solid #ffffff;
-  }
-  
-  .grid:hover, .nut:hover {
-    background-color: #696969;
-  }
-  
-  .col {
-    flex: 1;
-  }
-  
-  .fretboard {
-    width: fit-content;
-    margin: auto;
-    transform: perspective(800px) rotateY(0deg) scale(0.95);
-    transition: transform 0.60s ease-out;
-    transform-origin: 25px;
-    transform-style: preserve-3d;
-  }
+/* ── Shared dimension tokens ──────────────────────────────────────────────── */
+:root {
+  --fb-open-w:    52px;
+  --fb-nut-w:     14px;
+  --fb-fret-w:    52px;
+  --fb-row-h:     64px;
+  --fb-header-h:  26px;
+  --fb-inlay-h:   26px;
+}
 
-  .string {
-    border-left: 2px solid #b3b3b3;
-    width: 2px;
-    height: 14px;
-    margin: auto;
-  }
-  
-  .binding {
-    background-color: #f5deb3;
-    min-width: 19px;
-    line-height: 60px;
-    margin: 0 0 0 0;
-  }
+/* ── Outer wrapper ────────────────────────────────────────────────────────── */
+.fretboard {
+  display: inline-flex;
+  flex-direction: column;
+  background: #141a24;
+  border: 1px solid #21282f;
+  border-radius: 8px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.65);
+  overflow: hidden;
+  transform: perspective(1200px) rotateX(0deg) scale(0.97);
+  transition: transform 0.55s ease-out;
+}
 
-  .no-binding {
-    min-width: 19px;
-    line-height: 60px;
-    margin: 0 0 0 0;
-  }
+.perspective {
+  transform: perspective(1200px) rotateX(-6deg) rotateY(6deg) scale(0.95);
+}
 
-  .perspective {
-    transform: perspective(800px) rotateY(15deg) scale(0.95);
-  }
-  
-  .horizontal {
-    transform: perspective(800px) translateY(-500px) rotate(-90deg) scale(0.75);
-    transform-origin: center center;
-  }
+/* ── Fret-number header row ───────────────────────────────────────────────── */
+.fb-header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: var(--fb-header-h);
+  background: #0d1117;
+  border-bottom: 1px solid #21282f;
+  flex-shrink: 0;
+}
+
+.fb-open-spacer {
+  width: var(--fb-open-w);
+  flex-shrink: 0;
+}
+
+.fb-nut-spacer {
+  width: var(--fb-nut-w);
+  flex-shrink: 0;
+}
+
+.fb-fret-num {
+  width: var(--fb-fret-w);
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #3a4a5e;
+  line-height: var(--fb-header-h);
+  letter-spacing: 0.02em;
+}
+
+.fb-fret-num.has-inlay {
+  color: #5a7a90;
+}
+
+/* ── String rows ──────────────────────────────────────────────────────────── */
+.fb-string-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: var(--fb-row-h);
+  position: relative;
+  flex-shrink: 0;
+  background: #141a24;
+}
+
+.fb-string-row:hover {
+  background: #1a2233;
+}
+
+/* Continuous string line */
+.fb-string-row::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 1px;
+}
+
+/* Per-gauge string thickness & colour */
+.fb-gauge-1.fb-string-row::before { height: 1px;   background: #9098b0; }
+.fb-gauge-2.fb-string-row::before { height: 1.5px; background: #8090a8; }
+.fb-gauge-3.fb-string-row::before { height: 2px;   background: #7080a0; }
+.fb-gauge-4.fb-string-row::before { height: 2.5px; background: linear-gradient(180deg, #c09840 0%, #907020 100%); }
+.fb-gauge-5.fb-string-row::before { height: 3px;   background: linear-gradient(180deg, #b08830 0%, #806010 100%); }
+.fb-gauge-6.fb-string-row::before { height: 3.5px; background: linear-gradient(180deg, #a07828 0%, #705008 100%); }
+.fb-gauge-7.fb-string-row::before { height: 4px;   background: linear-gradient(180deg, #906818 0%, #604000 100%); }
+.fb-gauge-8.fb-string-row::before { height: 4.5px; background: linear-gradient(180deg, #805810 0%, #503000 100%); }
+
+/* ── Fret cells ───────────────────────────────────────────────────────────── */
+.fb-fret-cell {
+  width: var(--fb-fret-w);
+  flex-shrink: 0;
+  height: 100%;
+  border-right: 1px solid #21282f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Open-string cell */
+.fb-open-cell {
+  width: var(--fb-open-w);
+  border-right: none;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+/* ── Nut ──────────────────────────────────────────────────────────────────── */
+.fb-nut-bar {
+  width: var(--fb-nut-w);
+  flex-shrink: 0;
+  height: 85%;
+  background: #3a4a5e;
+  border-radius: 2px;
+  box-shadow: 1px 0 4px rgba(0, 0, 0, 0.5),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Inlay / position-marker row ─────────────────────────────────────────── */
+.fb-inlay-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: var(--fb-inlay-h);
+  background: #0d1117;
+  border-top: 1px solid #21282f;
+  flex-shrink: 0;
+}
+
+.fb-inlay-cell {
+  width: var(--fb-fret-w);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.fb-inlay-dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #252e3f;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}

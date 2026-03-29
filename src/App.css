@@ -1,59 +1,180 @@
-.App {
-  text-align: center;
+/* ── CSS Variables ───────────────────────────────────────────────────────── */
+:root {
+  --nav-h:      56px;
+  --tuning-h:   38px;
+  --bg-base:    #0d1117;
+  --bg-panel:   #161c24;
+  --bg-card:    #1e2530;
+  --border:     #21282f;
+  --text-1:     #c9d1d9;
+  --text-2:     #8b949e;
+  --accent-g:   #4ade80;
+  --accent-r:   #f87171;
+  --accent-b:   #38bdf8;
 }
 
-ul {
+.App {
+  padding-top: calc(var(--nav-h) + var(--tuning-h));
+  background: var(--bg-base);
+  min-height: 100vh;
+}
+
+/* ── Fretboard area — centered, horizontally scrollable ──────────────────── */
+.fretboard-area {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  padding: 28px 24px 0;
+}
+
+/* ── Navigation bar ──────────────────────────────────────────────────────── */
+.app-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--nav-h);
+  padding: 0 24px;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999999;
+  box-sizing: border-box;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.nav-icon {
+  font-size: 22px;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.nav-title {
+  color: var(--text-1);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.nav-controls {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+}
+
+.nav-control-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 18px;
+  border-left: 1px solid var(--border);
+}
+
+.nav-label {
+  color: var(--text-2);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+
+.app-nav select {
+  background: transparent;
+  border: none;
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%238b949e'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
+  min-width: 72px;
+}
+
+.app-nav select option {
+  background: #1c2533;
+  color: var(--text-1);
+}
+
+/* ── Tuning bar ──────────────────────────────────────────────────────────── */
+.tuning-bar {
   display: flex;
   align-items: center;
   justify-content: center;
-  list-style-type: none;
-  height: 45px;
+  flex-wrap: wrap;
+  gap: 4px;
   width: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  background-color: #27414b;
+  height: var(--tuning-h);
+  padding: 0 16px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
   position: fixed;
-  z-index: 999999;
-}
-
-li {
-  display: inline;
-  color: #ffffff;
-  padding: 2vw 1vw;
-  text-decoration: none;
-}
-
-.button {
-  background-color: #5a747a;
-  border: none;
-  border-radius: 5px;
-  color: white;
-  text-align: center;
-  text-decoration: none;
-  font-weight: 600;
-  line-height: 1;
-  height: 25px;
-  margin-top: 1.5rem;
-  display: inline-block;
-  font-size: 16px;
-  margin: 2px 2px;
-  cursor: pointer;
+  top: var(--nav-h);
+  left: 0;
+  right: 0;
+  z-index: 999998;
+  box-sizing: border-box;
 }
 
 .drop-down-label {
-  color: white;
+  color: var(--text-2);
+  font-size: 9px;
   font-weight: 600;
-  padding-right: 1px;
-  padding-left: 1px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding-right: 4px;
 }
 
-@media only screen and (max-width: 1137px) {
-  #rotate-button {
-    display: none;
-  }
+.tuning-select {
+  width: 50px;
+  background: transparent;
+  border: none;
+  color: var(--text-1);
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
 
-  #perspective-button {
+.tuning-select option {
+  background: #1c2533;
+  color: var(--text-1);
+}
+
+/* ── Perspective button ──────────────────────────────────────────────────── */
+.button {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.button:hover {
+  border-color: #38485a;
+  color: var(--text-1);
+}
+
+@media (max-width: 768px) {
+  #perspective-group {
     display: none;
   }
 }

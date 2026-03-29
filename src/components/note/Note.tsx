@@ -1,23 +1,17 @@
 import React from 'react';
 import './Note.css';
 import { NoteNames } from '../../models/noteNames';
-import { GuitarService } from '../../services/guitar.service';
-import 'classnames';
+import { GuitarService, SoundMode } from '../../services/guitar.service';
 import classNames from 'classnames';
 
-interface INote { value: number, marked?: boolean, keySig: number, guitarService: GuitarService }
+interface INote { value: number, marked?: boolean, keySig: number, guitarService: GuitarService, soundMode: SoundMode }
 
 export class Note extends React.Component<INote> {
 
-    playNote(note: number): void {
-        this.props.guitarService.audioContext.resume().then(() => {
-            const guitarSound = this.props.guitarService.getFilterNodeByNoteNumber(note);
-            guitarSound.connect(this.props.guitarService.audioContext.destination);
-        });
-    }
-
     handleClick = () => {
-        this.playNote(this.props.value);
+        this.props.guitarService.audioContext.resume().then(() => {
+            this.props.guitarService.playNote(this.props.value, this.props.soundMode);
+        });
     }
 
     render() {
