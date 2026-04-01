@@ -3,8 +3,11 @@ import './App.css';
 import { Fretboard } from './components/fretboard/Fretboard';
 import { ChordSection } from './components/chords/ChordSection';
 import { ProgressionSection } from './components/chords/ProgressionSection';
+import { MetronomeSection } from './components/metronome/MetronomeSection';
+import { TunerSection } from './components/tuner/TunerSection';
 import { Constants } from './models/constants';
 import { GuitarService } from './services/guitar.service';
+import { NoteNames } from './models/noteNames';
 
 interface IMode { keySig: number, mode: number };
 interface IModeState { keySig: number, mode: number, numOfStrings: number, tuning: number[], showPattern: boolean };
@@ -120,8 +123,28 @@ export default class App extends React.Component<{}, IModeState> {
                 Pattern
               </button>
             </div>
+            <div className="nav-control-group">
+              <button
+                type='button'
+                className='button'
+                onClick={ () => window.print() }
+                title='Export as PDF via browser print dialog'
+              >
+                PDF
+              </button>
+            </div>
           </div>
         </nav>
+
+        {/* Print-only title — hidden on screen, shows key + scale in exported PDF */}
+        <div className="print-title">
+          <span className="print-title-key">
+            {NoteNames.get(this.state.keySig)} {Constants.modes().find(m => m.key === this.state.mode)?.value}
+          </span>
+          <span className="print-title-tuning">
+            Tuning: {this.state.tuning.map(n => NoteNames.get(n)).join(' · ')}
+          </span>
+        </div>
 
         <div className='tuning-bar'>
           <span className='drop-down-label'>Tuning:</span>
@@ -140,16 +163,21 @@ export default class App extends React.Component<{}, IModeState> {
           />
         </div>
 
-        <ChordSection
+        <div className="tools-row">
+          <MetronomeSection guitarService={this.guitarService} />
+          <TunerSection     guitarService={this.guitarService} />
+        </div>
+
+        <ProgressionSection
           keySig={ this.state.keySig }
-          scaleIndex={ this.state.mode }
           tuning={ this.state.tuning }
           guitarService={ this.guitarService }
           soundMode='clean'
         />
 
-        <ProgressionSection
+        <ChordSection
           keySig={ this.state.keySig }
+          scaleIndex={ this.state.mode }
           tuning={ this.state.tuning }
           guitarService={ this.guitarService }
           soundMode='clean'

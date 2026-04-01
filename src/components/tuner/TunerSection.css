@@ -1,0 +1,180 @@
+/* ── Tuner section ────────────────────────────────────────────────────────── */
+.tuner-section {
+    background: #0f1e26;
+    border-top: 2px solid #1e3a48;
+    padding: 12px 16px 16px;
+    box-sizing: border-box;
+    flex: 1;
+    min-width: 0;
+}
+
+.tuner-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.tuner-title {
+    color: #adff2f;
+    font-size: 13px;
+    font-weight: 700;
+    flex: 1;
+}
+
+.tuner-toggle-btn {
+    background: #1a4a60;
+    border: 1.5px solid #2a7a9a;
+    border-radius: 6px;
+    color: #80c8e8;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.tuner-toggle-btn:hover { background: #224e68; border-color: #3a9aba; }
+
+.tuner-toggle-btn--active {
+    background: #38bdf8;
+    border-color: #60d0ff;
+    color: #0a1a28;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+/* ── Note display ─────────────────────────────────────────────────────────── */
+.tuner-note-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.tuner-note-name {
+    font-size: 42px;
+    font-weight: 800;
+    color: #c9d1d9;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    min-width: 60px;
+}
+
+.tuner-note-name--intune { color: #4ade80; }
+.tuner-note-name--close  { color: #facc15; }
+.tuner-note-name--off    { color: #f87171; }
+
+.tuner-freq {
+    font-size: 12px;
+    color: #5a8898;
+    font-variant-numeric: tabular-nums;
+}
+
+.tuner-cents-value {
+    font-size: 12px;
+    font-weight: 700;
+    color: #80c8e8;
+    font-variant-numeric: tabular-nums;
+    min-width: 40px;
+    text-align: right;
+}
+
+/* ── Gauge ────────────────────────────────────────────────────────────────── */
+.tuner-gauge-wrap {
+    position: relative;
+    height: 48px;
+    margin-bottom: 4px;
+}
+
+.tuner-gauge-track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 6px;
+    transform: translateY(-50%);
+    background: #1a2e3a;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.tuner-gauge-zone {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(50% - 6%);
+    width: 12%;
+    background: rgba(74, 222, 128, 0.2);
+    border-radius: 2px;
+}
+
+.tuner-gauge-needle {
+    position: absolute;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    border-radius: 2px;
+    background: #38bdf8;
+    transform: translateX(-50%);
+    left: 50%;
+    transition: left 0.08s ease-out, background 0.15s;
+}
+
+.tuner-gauge-needle--intune { background: #4ade80; }
+.tuner-gauge-needle--close  { background: #facc15; }
+.tuner-gauge-needle--off    { background: #f87171; }
+
+.tuner-gauge-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #3a5a6e;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.tuner-silent {
+    color: #3a5a6e;
+    font-size: 12px;
+    font-style: italic;
+    text-align: center;
+    padding: 8px 0;
+}
+
+/* ── Reference note buttons ───────────────────────────────────────────────── */
+.tuner-ref-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.tuner-ref-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #5a8898;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    align-self: center;
+    margin-right: 4px;
+}
+
+.tuner-ref-btn {
+    background: none;
+    border: 1px solid #1e3a4a;
+    border-radius: 5px;
+    color: #4a7080;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.tuner-ref-btn:hover   { color: #90b8c8; border-color: #2a5a70; }
+.tuner-ref-btn--active { background: #123040; border-color: #38bdf8; color: #70c8e8; }
+
+@media (max-width: 600px) {
+    .tuner-section     { padding: 10px 10px 12px; }
+    .tuner-note-name   { font-size: 32px; }
+}

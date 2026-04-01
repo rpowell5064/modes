@@ -159,50 +159,74 @@
 /* ── Mobile layout ───────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   :root {
-    --nav-h: 48px;
+    --nav-h:    48px;
     --tuning-h: 34px;
   }
 
+  /* ── Nav ── */
   .app-nav {
-    padding: 0 12px;
-  }
-
-  .nav-brand {
-    gap: 6px;
-  }
-
-  .nav-icon {
-    font-size: 18px;
-  }
-
-  .nav-title {
-    font-size: 13px;
-  }
-
-  .nav-control-group {
     padding: 0 10px;
   }
 
-  .app-nav select {
-    font-size: 12px;
-    min-width: 52px;
+  .nav-brand {
+    gap: 4px;
+    flex-shrink: 0;
   }
 
-  .fretboard-area {
-    padding: 16px 0 0;
-    /* allow the fretboard to scroll horizontally without the page following */
+  .nav-icon {
+    font-size: 20px;
+  }
+
+  /* Hide the brand text — keeps icon only, frees ~70px for controls */
+  .nav-title {
+    display: none;
+  }
+
+  /* Let the controls row scroll horizontally so all four groups are reachable */
+  .nav-controls {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;           /* Firefox */
+  }
+  .nav-controls::-webkit-scrollbar {
+    display: none;                   /* Chrome / Safari */
   }
 
+  .nav-control-group {
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+
+  .nav-label {
+    font-size: 8px;
+  }
+
+  .app-nav select {
+    font-size: 11px;
+    min-width: 46px;
+  }
+
+  /* ── Tuning bar ── */
   .tuning-bar {
     gap: 2px;
     padding: 0 8px;
   }
 
   .tuning-select {
-    width: 42px;
+    width: 40px;
     font-size: 11px;
+  }
+
+  /* ── Fretboard area ──
+     Remove justify-content: center — it clips the left edge and prevents
+     left-to-right horizontal scrolling on touch devices.
+     Start from the left so the user can scroll right to see all 22 frets. */
+  .fretboard-area {
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px 0 0;
+    touch-action: pan-x pan-y;
   }
 }
 
@@ -229,4 +253,149 @@
   border-color: #b89a2a;
   color: #fde047;
   background: rgba(253, 224, 71, 0.08);
+}
+
+/* ── Print-only title (hidden on screen) ─────────────────────────────────── */
+.print-title {
+  display: none;
+}
+
+/* ── Tools row: metronome + tuner side-by-side ───────────────────────────── */
+.tools-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+@media (max-width: 600px) {
+  .tools-row {
+    flex-direction: column;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Print / PDF export
+   Chrome: File → Print → "Save as PDF"  (landscape recommended)
+   ══════════════════════════════════════════════════════════════════════════ */
+@media print {
+  /* Force background colours / images to render */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    size: landscape;
+    margin: 10mm 8mm;
+  }
+
+  /* ── Layout reset ── */
+  .App {
+    padding-top: 0;
+    overflow: visible;
+    min-height: unset;
+  }
+
+  /* ── Print title ── */
+  .print-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 0 10px;
+    border-bottom: 1px solid #2a4050;
+    margin-bottom: 10px;
+  }
+
+  .print-title-key {
+    font-size: 18px;
+    font-weight: 800;
+    color: #adff2f;
+    letter-spacing: -0.01em;
+  }
+
+  .print-title-tuning {
+    font-size: 10px;
+    color: #5a8898;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Nav: hide interactive chrome, keep brand for identification ── */
+  .app-nav {
+    position: static;
+    border-bottom: none;
+    padding: 0;
+    height: auto;
+    display: none;           /* hide entirely — print-title replaces it */
+  }
+
+  .tuning-bar {
+    display: none;
+  }
+
+  .tools-row,
+  .fb-scale-ctrl {
+    display: none;
+  }
+
+  /* ── Fretboard ── */
+  .fretboard-area {
+    overflow: visible;
+    padding: 0 0 8px;
+    justify-content: flex-start;
+  }
+
+  /* Scale fretboard to fit landscape page width (~1080px content at 96dpi).
+     22 frets × 52px + open + nut ≈ 1210px → zoom 0.85 ≈ 1028px            */
+  .fretboard {
+    zoom: 0.85;
+  }
+
+  /* Hide the SVG pattern overlay (JS-computed dimensions don't match print
+     zoom; the highlighted note dots convey the same info more cleanly)     */
+  .fb-pattern-overlay,
+  .fb-pattern-legend {
+    display: none !important;
+  }
+
+  /* ── Chord progression ── */
+  .prog-play-btn,
+  .prog-nav-btn,
+  .prog-bpm-slider,
+  .prog-bpm-value,
+  .prog-ctrl-label,
+  .prog-note-length-group,
+  .prog-timesig-row,
+  .prog-dots {
+    display: none;
+  }
+
+  .prog-card-chords {
+    overflow: visible;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* ── Chord section ── */
+  .chord-tabs {
+    display: none;
+  }
+
+  .chord-scroll-row {
+    overflow: visible;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Avoid page breaks inside a chord diagram */
+  .chord-slot,
+  .chord-diagram {
+    break-inside: avoid;
+  }
+
+  /* Keep sections together if possible */
+  .progression-section,
+  .chord-section {
+    break-inside: avoid;
+    margin-top: 8px;
+  }
 }

@@ -4,7 +4,7 @@ import { NoteNames } from '../../models/noteNames';
 import { GuitarService, SoundMode } from '../../services/guitar.service';
 import classNames from 'classnames';
 
-interface INote { value: number, marked?: boolean, keySig: number, guitarService: GuitarService, soundMode: SoundMode, showPattern?: boolean }
+interface INote { value: number, marked?: boolean, keySig: number, guitarService: GuitarService, soundMode: SoundMode, showPattern?: boolean, playing?: boolean }
 
 export class Note extends React.Component<INote> {
 
@@ -18,7 +18,8 @@ export class Note extends React.Component<INote> {
         const classes = classNames('note', {
             'marked':  this.props.marked,
             'pattern': this.props.marked && this.props.showPattern,
-            'octave':  NoteNames.get(this.props.value) === NoteNames.get(this.props.keySig)
+            'octave':  NoteNames.get(this.props.value) === NoteNames.get(this.props.keySig),
+            'playing': this.props.playing,
         });
 
         const noteName = NoteNames.get(this.props.value);

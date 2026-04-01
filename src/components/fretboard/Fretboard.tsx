@@ -4,6 +4,12 @@ import './Fretboard.css';
 import { Modes } from '../../models/modes';
 import { NoteNames } from '../../models/noteNames';
 import { GuitarService, SoundMode } from '../../services/guitar.service';
+import {
+    NoteLength, TimeSig, TIME_SIG_GROUPS,
+    NOTE_LENGTH_BEATS, NOTE_LENGTH_OPTIONS, NOTE_LENGTH_LABEL,
+    DEFAULT_BPM, DEFAULT_TIME_SIG, DEFAULT_NOTE_LEN,
+    LOOKAHEAD_S, TICK_MS,
+} from '../../models/playback';
 
 interface IFretboard {
   numOfFrets: number;
@@ -16,18 +22,20 @@ interface IFretboard {
 }
 
 interface FretboardState {
-  soloPattern: number | null;
+  soloPattern:    number | null;
+  isMobile:       boolean;
+  isPlayingScale: boolean;
+  scaleBpm:       number;
+  scaleNoteLen:   NoteLength;
+  scaleTimeSig:   TimeSig;
+  scaleBeat:      number;
+  activeNote:     { stringIdx: number; fret: number } | null;
 }
 
 const INLAY_FRETS     = new Set([3, 5, 7, 9, 12, 15, 17, 19, 21]);
 const DBL_INLAY_FRETS = new Set([12]);
 
-const OPEN_W   = 52;
-const NUT_W    = 14;
-const FRET_W   = 52;
-const ROW_H    = 64;
-const HEADER_H = 26;
-const PAD      = 6;
+const PAD = 6;
 
 const PATTERN_COLORS = [
   { stroke: '#22d3ee', fill: 'rgba(34,  211, 238, 0.07)' },
@@ -47,20 +55,59 @@ interface PatternPosition {
   boxMin: number;
   boxMax: number;
   chipX:  number;   // px from left of fret-area container
+  stringRanges: { minFret: number; maxFret: number }[];
 }
 
 export class Fretboard extends React.Component<IFretboard, FretboardState> {
 
+  // ── Scale playback scheduler ──────────────────────────────────────────────
+  private scaleIntervalId: number | null = null;
+  private scaleIsPlaying   = false;
+  private scaleNextNoteT   = 0;
+  private scaleNextBeatT   = 0;
+  private scaleNextNoteIdx = 0;
+  private scaleNextBeatIdx = 0;
+  private scaleUiTimers:   number[] = [];
+  private cachedScaleNotes: { midiNote: number; stringIdx: number; fret: number }[] = [];
+
   constructor(props: IFretboard) {
     super(props);
-    this.state = { soloPattern: null };
+    this.state = {
+      soloPattern:    null,
+      isMobile:       window.innerWidth <= 600,
+      isPlayingScale: false,
+      scaleBpm:       DEFAULT_BPM,
+      scaleNoteLen:   DEFAULT_NOTE_LEN,
+      scaleTimeSig:   DEFAULT_TIME_SIG,
+      scaleBeat:      -1,
+      activeNote:     null,
+    };
+    this.handleResize = this.handleResize.bind(this);
   }
 
   componentDidMount() {
+    window.addEventListener('resize', this.handleResize);
     if (this.props.showPattern) this.selectKeyPattern();
   }
 
-  componentDidUpdate(prevProps: IFretboard) {
+  componentWillUnmount() {
+    this.stopScalePlay();
+    window.removeEventListener('resize', this.handleResize);
+  }
+
+  private handleResize() {
+    const isMobile = window.innerWidth <= 600;
+    if (isMobile !== this.state.isMobile) this.setState({ isMobile });
+  }
+
+  // ── Responsive layout constants ─────────────────────────────────────────
+  private get OPEN_W()   { return this.state.isMobile ? 42 : 52; }
+  private get NUT_W()    { return this.state.isMobile ? 10 : 14; }
+  private get FRET_W()   { return this.state.isMobile ? 44 : 52; }
+  private get ROW_H()    { return this.state.isMobile ? 52 : 64; }
+  private get HEADER_H() { return this.state.isMobile ? 20 : 26; }
+
+  componentDidUpdate(prevProps: IFretboard, prevState: FretboardState) {
     const { showPattern, keySig, mode } = this.props;
     if (!prevProps.showPattern && showPattern) {
       this.selectKeyPattern();
@@ -69,6 +116,22 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
     } else if (showPattern && (prevProps.keySig !== keySig || prevProps.mode !== mode)) {
       this.selectKeyPattern();
     }
+    // If scale is playing and key/mode/pattern changed: refresh the note list
+    if (this.scaleIsPlaying) {
+      const changed =
+        prevState.soloPattern !== this.state.soloPattern ||
+        prevProps.keySig      !== this.props.keySig      ||
+        prevProps.mode        !== this.props.mode;
+      if (changed) {
+        const notes = this.computeScaleNotes();
+        if (!notes.length) { this.stopScalePlay(); }
+        else { this.cachedScaleNotes = notes; this.scaleNextNoteIdx = 0; }
+      }
+    }
+    // Auto-stop if pattern deselected
+    if (this.scaleIsPlaying && this.state.soloPattern === null) {
+      this.stopScalePlay();
+    }
   }
 
   private selectKeyPattern() {
@@ -76,6 +139,12 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
     const keyLabel  = NoteNames.get(this.props.keySig);
     const idx       = positions.findIndex(p => p.label === keyLabel);
     this.setState({ soloPattern: idx >= 0 ? idx : null });
+  }
+
+  // mode indices 7 = Major Pentatonic, 8 = Minor Pentatonic, 9 = Blues Pentatonic
+  // all use 2 notes per string as the base (blues adds a 3rd only on half-step runs).
+  private isPentatonic(): boolean {
+    return this.props.mode === 7 || this.props.mode === 8 || this.props.mode === 9;
   }
 
   isMarked(note: number): boolean {
@@ -91,52 +160,179 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
     return false;
   }
 
+  private computeStringRangesForBox(boxMin: number, boxMax: number): { minFret: number; maxFret: number }[] {
+    const { tuning } = this.props;
+    const numStrings     = tuning.length;
+    const isPenta        = this.isPentatonic();
+    const isBlues        = this.props.mode === 9;
+    const notesPerString = isPenta ? 2 : 3;
+
+    // ── Stray-note detection (diatonic / blues only) ─────────────────────────
+    // Pentatonic patterns skip this entirely — 2-note groups don't exhibit the
+    // same G→B connector-note artefact as 3-note groups.
+    //
+    // Two situations cause a stray connector note at boxMin on B / high-e:
+    //
+    // 1. G cluster shifted right (gStartFret > boxMin):
+    //    G has no note at boxMin; B/high-e may still have a scale note there
+    //    that belongs to the previous pattern position.
+    //
+    // 2. G cluster extends beyond boxMax (gThirdFret > boxMax):
+    //    Classic G→B tuning-break shift (major-third gap vs perfect-fourth).
+    //    G's 3rd note lands past boxMax, so B and high-e must start 1 fret higher.
+    //    Example: A Phrygian A-position — G has C(5), D(7), E(9) in box [5,8].
+    //    E > boxMax 8 → drop the leading note on B and high-e.
+    let skipStrayFromG = false;
+    let bStartFret     = boxMax + 2;   // sentinel: "not found"
+
+    if (!isPenta) {
+      const gStringSi  = numStrings - 1 - 2;
+      let   gStartFret = boxMax + 2;
+      let   gThirdFret = boxMax + 2;
+      let   gCount     = 0;
+      for (let f = boxMin; f <= boxMax + 2; f++) {
+        if (this.isMarked(tuning[gStringSi] + f)) {
+          if (gCount === 0) gStartFret = f;
+          gCount++;
+          if (gCount === 3) { gThirdFret = f; break; }
+        }
+      }
+      const gExtended  = gCount >= 3 && gThirdFret > boxMax;
+      skipStrayFromG   = (gStartFret > boxMin) || gExtended;
+
+      const bStringSi  = numStrings - 1 - 1;
+      for (let f = boxMin; f <= boxMax + 1; f++) {
+        if (this.isMarked(tuning[bStringSi] + f)) { bStartFret = f; break; }
+      }
+    }
+
+    // Display order: row 0 = high e, row 1 = B, row 2 = G, …, row n-1 = low E
+    const ranges: { minFret: number; maxFret: number }[] = [];
+    for (let row = 0; row < numStrings; row++) {
+      const si       = numStrings - 1 - row;
+      const openNote = tuning[si];
+
+      // For diatonic B (row 1) and high-e (row 0): collect an extra note and
+      // search one fret further so that after stray-dropping we still have 3.
+      // For pentatonic: collect exactly 2, search up to boxMax+7 to accommodate
+      // strings whose 2-note group lands further right due to scale spacing.
+      const isHighString = !isPenta && (row === 0 || row === 1);
+      // Blues: cap at 3 (2 base + possible half-step extra); others: 2 or 3/4
+      const maxCollect   = isPenta ? (isBlues ? 3 : 2) : (isHighString ? 4 : 3);
+      const searchMax    = isPenta ? boxMax + 7 : (isHighString ? boxMax + 2 : boxMax + 1);
+
+      const skipStrayAtBoxMin = row === 0
+        ? (skipStrayFromG || bStartFret > boxMin)
+        : skipStrayFromG;
+
+      const marked: number[] = [];
+      for (let f = boxMin; f <= searchMax && marked.length < maxCollect; f++) {
+        if (this.isMarked(openNote + f)) {
+          marked.push(f);
+          // Blues: stop at 2 notes when the last interval is not a half step.
+          // If it IS a half step, continue collecting up to the maxCollect cap (3).
+          if (isBlues && marked.length === 2 && marked[1] - marked[0] > 1) break;
+        }
+      }
+
+      if (!isPenta && isHighString && skipStrayAtBoxMin && marked.length > 0 && marked[0] === boxMin) {
+        marked.shift();
+      }
+
+      // Pentatonic/blues: the loop already collected the right count — use as-is.
+      // Diatonic: slice to notesPerString (handles post-stray-drop surplus).
+      const used = isPenta ? marked : marked.slice(0, notesPerString);
+      if (used.length > 0) {
+        ranges.push({ minFret: used[0], maxFret: used[used.length - 1] });
+      } else {
+        ranges.push({ minFret: boxMin, maxFret: boxMax });
+      }
+    }
+    return ranges;
+  }
+
+  private buildPatternPath(stringRanges: { minFret: number; maxFret: number }[]): string {
+    const numRows    = stringRanges.length;
+    const numStrings = this.props.tuning.length;
+    const pad        = PAD;
+    const { OPEN_W, NUT_W, FRET_W, ROW_H, HEADER_H } = this;
+
+    const TOP_Y         = HEADER_H - pad;
+    const BOT_Y         = HEADER_H + numStrings * ROW_H + pad;
+    const rowBoundaryY  = (r: number) => HEADER_H + r * ROW_H;
+    const xL = (fret: number) => OPEN_W + NUT_W + (fret - 1) * FRET_W - pad;
+    const xR = (fret: number) => OPEN_W + NUT_W + fret * FRET_W + pad;
+
+    const cmds: string[] = [];
+    cmds.push(`M ${xL(stringRanges[0].minFret)} ${TOP_Y}`);
+    cmds.push(`L ${xR(stringRanges[0].maxFret)} ${TOP_Y}`);
+
+    // Right side: trace down, stepping horizontally where maxFret changes
+    for (let r = 0; r < numRows; r++) {
+      const nextY = r === numRows - 1 ? BOT_Y : rowBoundaryY(r + 1);
+      cmds.push(`L ${xR(stringRanges[r].maxFret)} ${nextY}`);
+      if (r < numRows - 1 && stringRanges[r].maxFret !== stringRanges[r + 1].maxFret) {
+        cmds.push(`L ${xR(stringRanges[r + 1].maxFret)} ${nextY}`);
+      }
+    }
+
+    cmds.push(`L ${xL(stringRanges[numRows - 1].minFret)} ${BOT_Y}`);
+
+    // Left side: trace up, stepping horizontally where minFret changes
+    for (let r = numRows - 1; r >= 0; r--) {
+      const prevY = r === 0 ? TOP_Y : rowBoundaryY(r);
+      cmds.push(`L ${xL(stringRanges[r].minFret)} ${prevY}`);
+      if (r > 0 && stringRanges[r].minFret !== stringRanges[r - 1].minFret) {
+        cmds.push(`L ${xL(stringRanges[r - 1].minFret)} ${prevY}`);
+      }
+    }
+
+    cmds.push('Z');
+    return cmds.join(' ');
+  }
+
   computePositions(): PatternPosition[] {
     const { numOfFrets, tuning } = this.props;
     const numStrings = tuning.length;
+    const isPenta    = this.isPentatonic();
 
-    const markedByString: number[][] = Array.from({ length: numStrings }, (_, si) => {
-      const openNote = tuning[si];
-      const frets: number[] = [];
-      for (let f = 1; f <= numOfFrets; f++) {
-        if (this.isMarked(openNote + f)) frets.push(f);
-      }
-      return frets;
-    });
+    // Always anchor pattern boxes to the standard low-E string (tuning index
+    // numStrings-6) so box boundaries are identical across 6/7/8-string layouts.
+    // Extra bass strings below low E extend the display but don't shift the boxes.
+    const refIdx  = Math.max(0, numStrings - 6);
+    const refMidi = tuning[refIdx];
 
-    const refFrets = markedByString[0];
-    if (refFrets.length < 3) return [];
+    // Build marked frets for the reference string
+    const refFrets: number[] = [];
+    for (let f = 1; f <= numOfFrets; f++) {
+      if (this.isMarked(refMidi + f)) refFrets.push(f);
+    }
 
-    const MIN_SEP = 3;
+    // Pentatonic: box = 2 consecutive marks (2 notes/string).
+    // Diatonic / blues: box = 3 consecutive marks (3 notes/string).
+    const boxSize = isPenta ? 2 : 3;
+    if (refFrets.length < boxSize) return [];
+
+    // Pentatonic positions are denser — allow them as close as 2 frets apart.
+    const MIN_SEP = isPenta ? 2 : 3;
     const positions: PatternPosition[] = [];
 
-    for (let i = 0; i <= refFrets.length - 3; i++) {
+    for (let i = 0; i <= refFrets.length - boxSize; i++) {
       const startFret = refFrets[i];
-      const center    = refFrets[i + 1];
+      const boxMin    = startFret;
+      const boxMax    = refFrets[i + boxSize - 1];
+      // For dedup: pentatonic uses startFret; diatonic uses the middle mark.
+      const center    = isPenta ? startFret : refFrets[i + 1];
 
       if (positions.some(p => Math.abs(p.center - center) < MIN_SEP)) continue;
 
-      // Per-string: find the 3-note group whose middle note is nearest to center
-      let boxMin = Infinity, boxMax = -Infinity;
-      for (const frets of markedByString) {
-        if (frets.length < 3) continue;
-        let bestDist = Infinity, bestA = frets[0], bestC = frets[2];
-        for (let k = 0; k <= frets.length - 3; k++) {
-          const dist = Math.abs(frets[k + 1] - center);
-          if (dist < bestDist) { bestDist = dist; bestA = frets[k]; bestC = frets[k + 2]; }
-        }
-        boxMin = Math.min(boxMin, bestA);
-        boxMax = Math.max(boxMax, bestC);
-      }
-      if (boxMin === Infinity) continue;
+      const idx          = positions.length;
+      const color        = PATTERN_COLORS[idx % PATTERN_COLORS.length];
+      const label        = NoteNames.get(refMidi + startFret);
+      const chipX        = ((boxMin - 1) + boxMax) / 2 * this.FRET_W;
+      const stringRanges = this.computeStringRangesForBox(boxMin, boxMax);
 
-      const idx   = positions.length;
-      const color = PATTERN_COLORS[idx % PATTERN_COLORS.length];
-      const label = NoteNames.get(tuning[0] + startFret);
-      // chip center = pixel-center of the box, relative to the fret-area div
-      const chipX = ((boxMin - 1) + boxMax) / 2 * FRET_W;
-
-      positions.push({ index: idx, center, label, color, boxMin, boxMax, chipX });
+      positions.push({ index: idx, center, label, color, boxMin, boxMax, chipX, stringRanges });
     }
 
     return positions;
@@ -154,13 +350,115 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
     });
   }
 
+  // ── Scale note computation ────────────────────────────────────────────────
+  private computeScaleNotes(): { midiNote: number; stringIdx: number; fret: number }[] {
+    const { soloPattern } = this.state;
+    if (soloPattern === null) return [];
+    const positions = this.computePositions();
+    if (!positions.length || soloPattern >= positions.length) return [];
+    const pos        = positions[soloPattern];
+    const { tuning } = this.props;
+    const numStrings = tuning.length;
+    const notes: { midiNote: number; stringIdx: number; fret: number }[] = [];
+    pos.stringRanges.forEach(({ minFret, maxFret }, row) => {
+      const si = numStrings - 1 - row;
+      for (let f = minFret; f <= maxFret; f++) {
+        const midi = tuning[si] + f;
+        if (this.isMarked(midi)) notes.push({ midiNote: midi, stringIdx: si, fret: f });
+      }
+    });
+    notes.sort((a, b) => a.midiNote - b.midiNote);
+    return notes;
+  }
+
+  // ── Scale playback scheduler ──────────────────────────────────────────────
+  private scaleTick(): void {
+    if (!this.scaleIsPlaying) return;
+    const ctx    = this.props.guitarService.audioContext;
+    const { scaleBpm, scaleNoteLen, scaleTimeSig } = this.state;
+    const ts     = scaleTimeSig;
+    const qnSec  = 60 / scaleBpm;
+    const beatSec = ts.beatDurQN * qnSec;
+    const noteQN  = scaleNoteLen === 'whole' ? ts.beats * ts.beatDurQN : NOTE_LENGTH_BEATS[scaleNoteLen];
+    const noteSec = noteQN * qnSec;
+    const relSec  = Math.min(noteSec * 0.7, 1.5);
+    const notes   = this.cachedScaleNotes;
+    if (!notes.length) return;
+
+    while (this.scaleNextBeatT < ctx.currentTime + LOOKAHEAD_S) {
+      const bi = this.scaleNextBeatIdx;
+      const t  = this.scaleNextBeatT;
+      const ms = Math.max((t - ctx.currentTime) * 1000, 0);
+      const tm = window.setTimeout(() => {
+        if (this.scaleIsPlaying) this.setState({ scaleBeat: bi });
+      }, ms);
+      this.scaleUiTimers.push(tm);
+      this.scaleNextBeatT    += beatSec;
+      this.scaleNextBeatIdx   = (bi + 1) % ts.beats;
+    }
+
+    while (this.scaleNextNoteT < ctx.currentTime + LOOKAHEAD_S) {
+      const ni   = this.scaleNextNoteIdx;
+      const note = notes[ni];
+      this.props.guitarService.playNoteAt(
+        note.midiNote, this.props.soundMode,
+        this.scaleNextNoteT, noteSec, relSec,
+      );
+      const t  = this.scaleNextNoteT;
+      const ms = Math.max((t - ctx.currentTime) * 1000, 0);
+      const tm = window.setTimeout(() => {
+        if (this.scaleIsPlaying)
+          this.setState({ activeNote: { stringIdx: note.stringIdx, fret: note.fret } });
+      }, ms);
+      this.scaleUiTimers.push(tm);
+      this.scaleNextNoteT    += noteSec;
+      this.scaleNextNoteIdx   = (ni + 1) % notes.length;
+    }
+  }
+
+  private startScalePlay(): void {
+    this.stopScalePlay();
+    const notes = this.computeScaleNotes();
+    if (!notes.length) return;
+    this.cachedScaleNotes = notes;
+    this.props.guitarService.audioContext.resume().then(() => {
+      const t0 = this.props.guitarService.audioContext.currentTime + 0.05;
+      this.scaleNextNoteT   = t0;
+      this.scaleNextBeatT   = t0;
+      this.scaleNextNoteIdx = 0;
+      this.scaleNextBeatIdx = 0;
+      this.scaleIsPlaying   = true;
+      this.scaleTick();
+      this.scaleIntervalId = window.setInterval(() => this.scaleTick(), TICK_MS);
+      this.setState({ isPlayingScale: true, scaleBeat: 0, activeNote: null });
+    });
+  }
+
+  private stopScalePlay(): void {
+    this.scaleIsPlaying = false;
+    if (this.scaleIntervalId !== null) {
+      clearInterval(this.scaleIntervalId);
+      this.scaleIntervalId = null;
+    }
+    this.scaleUiTimers.forEach(clearTimeout);
+    this.scaleUiTimers = [];
+    this.setState({ isPlayingScale: false, activeNote: null, scaleBeat: -1 });
+  }
+
+  private isNotePlaying(stringIdx: number, fret: number): boolean {
+    const { isPlayingScale, activeNote } = this.state;
+    if (!isPlayingScale || !activeNote) return false;
+    return activeNote.stringIdx === stringIdx && activeNote.fret === fret;
+  }
+
   render() {
     const { numOfFrets, keySig, tuning, soundMode, guitarService, showPattern } = this.props;
-    const { soloPattern } = this.state;
+    const { soloPattern, isPlayingScale, scaleBeat, scaleTimeSig, scaleBpm, scaleNoteLen } = this.state;
     const numStrings = tuning.length;
     const fretNums   = Array.from({ length: numOfFrets }, (_, i) => i + 1);
     const stringOrder = Array.from({ length: numStrings }, (_, i) => numStrings - 1 - i);
 
+    const { OPEN_W, NUT_W, FRET_W, ROW_H, HEADER_H } = this;
     const svgWidth  = OPEN_W + NUT_W + numOfFrets * FRET_W;
     const svgHeight = HEADER_H + numStrings * ROW_H + HEADER_H;
 
@@ -177,21 +475,18 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
             height={svgHeight}
             style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: 3 }}
           >
-            {positions.map(({ index: j, color, boxMin, boxMax }) => {
+            {positions.map(({ index: j, color, stringRanges }) => {
               const dimmed = soloPattern !== null && soloPattern !== j;
-              const x1 = OPEN_W + NUT_W + (boxMin - 1) * FRET_W - PAD;
-              const x2 = OPEN_W + NUT_W + boxMax * FRET_W + PAD;
-              const y1 = HEADER_H - PAD;
-              const y2 = HEADER_H + numStrings * ROW_H + PAD;
+              const d = this.buildPatternPath(stringRanges);
               return (
-                <rect key={j}
-                  x={x1} y={y1} width={x2 - x1} height={y2 - y1}
-                  rx={8} ry={8}
+                <path key={j}
+                  d={d}
                   fill={color.fill}
                   fillOpacity={dimmed ? 0 : 1}
                   stroke={color.stroke}
                   strokeWidth="2"
                   strokeOpacity={dimmed ? 0.12 : 0.85}
+                  strokeLinejoin="miter"
                 />
               );
             })}
@@ -203,7 +498,7 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
           <div className="fb-open-spacer" />
           <div className="fb-nut-spacer" />
           {fretNums.map(f => (
-            <div key={f} className={`fb-fret-num${INLAY_FRETS.has(f) ? ' has-inlay' : ''}`}>{f}</div>
+            <div key={f} className={`fb-fret-num${INLAY_FRETS.has(f) ? ' has-inlay' : ''}${DBL_INLAY_FRETS.has(f) ? ' is-octave' : ''}`}>{f}</div>
           ))}
         </div>
 
@@ -214,16 +509,23 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
           return (
             <div key={si} className={`fb-string-row fb-gauge-${gaugeIndex}`}>
               <div className="fb-fret-cell fb-open-cell">
+                {/* Always-visible string name so you can orient yourself at a glance */}
+                <span className="fb-string-label">{NoteNames.get(openNote)}</span>
                 <Note value={openNote} marked={this.isMarked(openNote)} keySig={keySig}
-                  guitarService={guitarService} soundMode={soundMode} showPattern={showPattern} />
+                  guitarService={guitarService} soundMode={soundMode} showPattern={showPattern}
+                  playing={this.isNotePlaying(si, 0)} />
               </div>
               <div className="fb-nut-bar" />
               {fretNums.map(fi => {
                 const midiNote = openNote + fi;
+                const inlayCls = INLAY_FRETS.has(fi)
+                  ? (DBL_INLAY_FRETS.has(fi) ? ' fb-inlay-col fb-inlay-col--oct' : ' fb-inlay-col')
+                  : '';
                 return (
-                  <div key={fi} className="fb-fret-cell">
+                  <div key={fi} className={`fb-fret-cell${inlayCls}`}>
                     <Note value={midiNote} marked={this.isMarked(midiNote)} keySig={keySig}
-                      guitarService={guitarService} soundMode={soundMode} showPattern={showPattern} />
+                      guitarService={guitarService} soundMode={soundMode} showPattern={showPattern}
+                      playing={this.isNotePlaying(si, fi)} />
                   </div>
                 );
               })}
@@ -231,16 +533,19 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
           );
         })}
 
-        {/* ── Inlay-marker row ────────────────────────────────────────── */}
+        {/* ── Inlay-marker row — dots + fret numbers for quick navigation ─ */}
         <div className="fb-inlay-row">
           <div className="fb-open-spacer" />
           <div className="fb-nut-spacer" />
           {fretNums.map(f => (
-            <div key={f} className="fb-inlay-cell">
+            <div key={f} className={`fb-inlay-cell${INLAY_FRETS.has(f) ? ' has-inlay' : ''}${DBL_INLAY_FRETS.has(f) ? ' is-octave' : ''}`}>
               {INLAY_FRETS.has(f) && (
                 <>
-                  <span className="fb-inlay-dot" />
-                  {DBL_INLAY_FRETS.has(f) && <span className="fb-inlay-dot" />}
+                  <div className="fb-inlay-dots">
+                    <span className="fb-inlay-dot" />
+                    {DBL_INLAY_FRETS.has(f) && <span className="fb-inlay-dot" />}
+                  </div>
+                  <span className="fb-inlay-label">{f}</span>
                 </>
               )}
             </div>
@@ -285,6 +590,66 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
                   </button>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Scale Playback Controls ──────────────────────────────────── */}
+        {showPattern && (
+          <div className="fb-scale-ctrl">
+            <div className="fb-scale-top-row">
+              <span className="fb-scale-title">Scale Playback</span>
+              <div className="fb-scale-beats">
+                {Array.from({ length: scaleTimeSig.beats }, (_, b) => (
+                  <span key={b}
+                        className={`fb-scale-beat${isPlayingScale && scaleBeat === b ? ' fb-scale-beat--on' : ''}`} />
+                ))}
+              </div>
+              <button
+                className={`fb-scale-play${isPlayingScale ? ' fb-scale-play--playing' : ''}`}
+                onClick={() => isPlayingScale ? this.stopScalePlay() : this.startScalePlay()}
+                disabled={soloPattern === null}
+                aria-label={isPlayingScale ? 'Stop scale' : 'Play scale'}
+              >
+                {isPlayingScale ? '■' : '▶'}
+              </button>
+            </div>
+
+            <div className="fb-scale-controls-row">
+              <div className="fb-scale-bpm-group">
+                <label className="fb-scale-label">BPM</label>
+                <input type="range" className="fb-scale-bpm-slider"
+                       min={40} max={240} step={1} value={scaleBpm}
+                       onChange={e => this.setState({ scaleBpm: +e.currentTarget.value })} />
+                <span className="fb-scale-bpm-value">{scaleBpm}</span>
+              </div>
+              <div className="fb-scale-nl-group">
+                {NOTE_LENGTH_OPTIONS.map(nl => (
+                  <button key={nl}
+                          className={`fb-scale-nl-btn${scaleNoteLen === nl ? ' fb-scale-nl-btn--active' : ''}`}
+                          onClick={() => this.setState({ scaleNoteLen: nl })}>
+                    {NOTE_LENGTH_LABEL[nl]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="fb-scale-ts-row">
+              {TIME_SIG_GROUPS.map((group, gi) => (
+                <div key={gi} className="fb-scale-ts-group">
+                  <span className="fb-scale-ts-category">{group.category}</span>
+                  <div className="fb-scale-ts-btns">
+                    {group.sigs.map(ts => (
+                      <button key={ts.label}
+                              className={`fb-scale-ts-btn${scaleTimeSig.label === ts.label ? ' fb-scale-ts-btn--active' : ''}`}
+                              onClick={() => this.setState({ scaleTimeSig: ts })}
+                              title={`${ts.beats} beat${ts.beats !== 1 ? 's' : ''} per measure`}>
+                        {ts.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
