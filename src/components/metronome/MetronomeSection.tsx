@@ -1,26 +1,25 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import './MetronomeSection.css';
 import { GuitarService } from '../../services/guitar.service';
-import {
-    TimeSig, TIME_SIG_GROUPS, ALL_TIME_SIGS,
-    DEFAULT_BPM, LOOKAHEAD_S, TICK_MS,
-} from '../../models/playback';
+import { TimeSig, LOOKAHEAD_S, TICK_MS } from '../../models/playback';
 
-interface IMetronome { guitarService: GuitarService }
+interface IMetronome {
+    guitarService: GuitarService;
+    bpm:     number;
+    timeSig: TimeSig;
+}
 
-export function MetronomeSection({ guitarService }: IMetronome) {
+export function MetronomeSection({ guitarService, bpm, timeSig }: IMetronome) {
     const [isPlaying,  setIsPlaying]  = useState(false);
     const [activeBeat, setActiveBeat] = useState(-1);
-    const [bpm,        setBpm]        = useState(DEFAULT_BPM);
-    const [timeSig,    setTimeSig]    = useState<TimeSig>(ALL_TIME_SIGS[0]);
 
     const schedulerRef    = useRef<number | null>(null);
     const isPlayingRef    = useRef(false);
     const nextBeatTimeRef = useRef(0);
     const nextBeatIdxRef  = useRef(0);
     const uiTimersRef     = useRef<number[]>([]);
-    const bpmRef          = useRef(DEFAULT_BPM);
-    const timeSigRef      = useRef<TimeSig>(ALL_TIME_SIGS[0]);
+    const bpmRef          = useRef(bpm);
+    const timeSigRef      = useRef<TimeSig>(timeSig);
 
     useEffect(() => { bpmRef.current     = bpm;    }, [bpm]);
     useEffect(() => { timeSigRef.current = timeSig; }, [timeSig]);
@@ -80,14 +79,6 @@ export function MetronomeSection({ guitarService }: IMetronome) {
         <div className="metronome-section">
             <div className="metro-header">
                 <span className="metro-title">Metronome</span>
-
-                <div className="metro-beats">
-                    {Array.from({ length: timeSig.beats }, (_, b) => (
-                        <span key={b}
-                              className={`metro-beat${isPlaying && activeBeat === b ? ' metro-beat--on' : ''}`} />
-                    ))}
-                </div>
-
                 <button
                     className={`metro-play-btn${isPlaying ? ' metro-play-btn--playing' : ''}`}
                     onClick={() => isPlaying ? stop() : play()}
@@ -97,31 +88,19 @@ export function MetronomeSection({ guitarService }: IMetronome) {
                 </button>
             </div>
 
-            <div className="metro-controls-row">
-                <div className="metro-bpm-group">
-                    <label className="metro-label">BPM</label>
-                    <input type="range" className="metro-bpm-slider"
-                           min={40} max={240} step={1} value={bpm}
-                           onChange={e => setBpm(+e.currentTarget.value)} />
-                    <span className="metro-bpm-value">{bpm}</span>
-                </div>
+            <div className="metro-info-row">
+                <span className="metro-info-bpm">{bpm}</span>
+                <span className="metro-info-unit">BPM</span>
+                <span className="metro-info-sep">·</span>
+                <span className="metro-info-ts">{timeSig.label}</span>
             </div>
 
-            <div className="metro-timesig-row">
-                {TIME_SIG_GROUPS.map((group, gi) => (
-                    <div key={gi} className="metro-ts-group">
-                        <span className="metro-ts-category">{group.category}</span>
-                        <div className="metro-ts-btns">
-                            {group.sigs.map(ts => (
-                                <button key={ts.label}
-                                        className={`metro-ts-btn${timeSig.label === ts.label ? ' metro-ts-btn--active' : ''}`}
-                                        onClick={() => { if (isPlaying) stop(); setTimeSig(ts); }}
-                                        title={`${ts.beats} beat${ts.beats !== 1 ? 's' : ''} per measure`}>
-                                    {ts.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+            <div className="metro-beats-row">
+                {Array.from({ length: timeSig.beats }, (_, b) => (
+                    <span
+                        key={b}
+                        className={`metro-beat${b === 0 ? ' metro-beat--accent' : ''}${isPlaying && activeBeat === b ? ' metro-beat--on' : ''}`}
+                    />
                 ))}
             </div>
         </div>

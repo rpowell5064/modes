@@ -7,7 +7,6 @@ import { GuitarService, SoundMode } from '../../services/guitar.service';
 import {
     NoteLength, TimeSig, TIME_SIG_GROUPS,
     NOTE_LENGTH_BEATS, NOTE_LENGTH_OPTIONS, NOTE_LENGTH_LABEL,
-    DEFAULT_BPM, DEFAULT_TIME_SIG, DEFAULT_NOTE_LEN,
     LOOKAHEAD_S, TICK_MS,
 } from '../../models/playback';
 
@@ -19,17 +18,22 @@ interface IFretboard {
   soundMode: SoundMode;
   guitarService: GuitarService;
   showPattern: boolean;
+  bpm:        number;
+  timeSig:    TimeSig;
+  noteLength: NoteLength;
 }
 
 interface FretboardState {
-  soloPattern:    number | null;
-  isMobile:       boolean;
-  isPlayingScale: boolean;
-  scaleBpm:       number;
-  scaleNoteLen:   NoteLength;
-  scaleTimeSig:   TimeSig;
-  scaleBeat:      number;
-  activeNote:     { stringIdx: number; fret: number } | null;
+  soloPattern:       number | null;
+  isMobile:          boolean;
+  isPlayingScale:    boolean;
+  scaleBpm:          number;
+  scaleNoteLen:      NoteLength;
+  scaleTimeSig:      TimeSig;
+  scaleBeat:         number;
+  activeNote:        { stringIdx: number; fret: number } | null;
+  synced:            boolean;
+  showScaleControls: boolean;
 }
 
 const INLAY_FRETS     = new Set([3, 5, 7, 9, 12, 15, 17, 19, 21]);
@@ -73,14 +77,16 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
   constructor(props: IFretboard) {
     super(props);
     this.state = {
-      soloPattern:    null,
-      isMobile:       window.innerWidth <= 600,
-      isPlayingScale: false,
-      scaleBpm:       DEFAULT_BPM,
-      scaleNoteLen:   DEFAULT_NOTE_LEN,
-      scaleTimeSig:   DEFAULT_TIME_SIG,
-      scaleBeat:      -1,
-      activeNote:     null,
+      soloPattern:       null,
+      isMobile:          window.innerWidth <= 600,
+      isPlayingScale:    false,
+      scaleBpm:          props.bpm,
+      scaleNoteLen:      props.noteLength,
+      scaleTimeSig:      props.timeSig,
+      scaleBeat:         -1,
+      activeNote:        null,
+      synced:            true,
+      showScaleControls: false,
     };
     this.handleResize = this.handleResize.bind(this);
   }
@@ -108,13 +114,23 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
   private get HEADER_H() { return this.state.isMobile ? 20 : 26; }
 
   componentDidUpdate(prevProps: IFretboard, prevState: FretboardState) {
-    const { showPattern, keySig, mode } = this.props;
+    const { showPattern, keySig, mode, bpm, timeSig, noteLength } = this.props;
     if (!prevProps.showPattern && showPattern) {
       this.selectKeyPattern();
     } else if (prevProps.showPattern && !showPattern) {
       this.setState({ soloPattern: null });
     } else if (showPattern && (prevProps.keySig !== keySig || prevProps.mode !== mode)) {
       this.selectKeyPattern();
+    }
+    // Propagate global playback changes when synced
+    if (this.state.synced) {
+      const globalChanged =
+        prevProps.bpm        !== bpm        ||
+        prevProps.timeSig    !== timeSig    ||
+        prevProps.noteLength !== noteLength;
+      if (globalChanged) {
+        this.setState({ scaleBpm: bpm, scaleTimeSig: timeSig, scaleNoteLen: noteLength });
+      }
     }
     // If scale is playing and key/mode/pattern changed: refresh the note list
     if (this.scaleIsPlaying) {
@@ -183,26 +199,36 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
     //    Example: A Phrygian A-position — G has C(5), D(7), E(9) in box [5,8].
     //    E > boxMax 8 → drop the leading note on B and high-e.
     let skipStrayFromG = false;
-    let bStartFret     = boxMax + 2;   // sentinel: "not found"
+    let bStartFret: number | null = null;   // null = stray detection not applicable
 
     if (!isPenta) {
-      const gStringSi  = numStrings - 1 - 2;
-      let   gStartFret = boxMax + 2;
-      let   gThirdFret = boxMax + 2;
-      let   gCount     = 0;
-      for (let f = boxMin; f <= boxMax + 2; f++) {
-        if (this.isMarked(tuning[gStringSi] + f)) {
-          if (gCount === 0) gStartFret = f;
-          gCount++;
-          if (gCount === 3) { gThirdFret = f; break; }
-        }
-      }
-      const gExtended  = gCount >= 3 && gThirdFret > boxMax;
-      skipStrayFromG   = (gStartFret > boxMin) || gExtended;
+      const gStringSi = numStrings - 1 - 2;
+      const bStringSi = numStrings - 1 - 1;
+      const gToB      = tuning[bStringSi] - tuning[gStringSi];
 
-      const bStringSi  = numStrings - 1 - 1;
-      for (let f = boxMin; f <= boxMax + 1; f++) {
-        if (this.isMarked(tuning[bStringSi] + f)) { bStartFret = f; break; }
+      // Only apply the stray-note correction when the G→B interval is the
+      // standard major-third (4 semitones). If the user has retuned either
+      // string the interval changes, the correction no longer applies, and
+      // skipping it lets the natural note-search produce correct patterns.
+      if (gToB === 4) {
+        let gStartFret = boxMax + 2;
+        let gThirdFret = boxMax + 2;
+        let gCount     = 0;
+        for (let f = boxMin; f <= boxMax + 2; f++) {
+          if (this.isMarked(tuning[gStringSi] + f)) {
+            if (gCount === 0) gStartFret = f;
+            gCount++;
+            if (gCount === 3) { gThirdFret = f; break; }
+          }
+        }
+        const gExtended  = gCount >= 3 && gThirdFret > boxMax;
+        skipStrayFromG   = (gStartFret > boxMin) || gExtended;
+
+        let bFound = boxMax + 2;   // internal sentinel: "not found"
+        for (let f = boxMin; f <= boxMax + 1; f++) {
+          if (this.isMarked(tuning[bStringSi] + f)) { bFound = f; break; }
+        }
+        bStartFret = bFound;
       }
     }
 
@@ -222,7 +248,7 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
       const searchMax    = isPenta ? boxMax + 7 : (isHighString ? boxMax + 2 : boxMax + 1);
 
       const skipStrayAtBoxMin = row === 0
-        ? (skipStrayFromG || bStartFret > boxMin)
+        ? (skipStrayFromG || (bStartFret !== null && bStartFret > boxMin))
         : skipStrayFromG;
 
       const marked: number[] = [];
@@ -453,7 +479,7 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
 
   render() {
     const { numOfFrets, keySig, tuning, soundMode, guitarService, showPattern } = this.props;
-    const { soloPattern, isPlayingScale, scaleBeat, scaleTimeSig, scaleBpm, scaleNoteLen } = this.state;
+    const { soloPattern, isPlayingScale, scaleBeat, scaleTimeSig, scaleBpm, scaleNoteLen, synced, showScaleControls } = this.state;
     const numStrings = tuning.length;
     const fretNums   = Array.from({ length: numOfFrets }, (_, i) => i + 1);
     const stringOrder = Array.from({ length: numStrings }, (_, i) => numStrings - 1 - i);
@@ -597,6 +623,8 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
         {/* ── Scale Playback Controls ──────────────────────────────────── */}
         {showPattern && (
           <div className="fb-scale-ctrl">
+
+            {/* Always-visible row: title · beat dots · play · sync · expand */}
             <div className="fb-scale-top-row">
               <span className="fb-scale-title">Scale Playback</span>
               <div className="fb-scale-beats">
@@ -613,44 +641,71 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
               >
                 {isPlayingScale ? '■' : '▶'}
               </button>
+              <button
+                className={`fb-scale-sync-btn${synced ? ' fb-scale-sync-btn--active' : ''}`}
+                onClick={() => this.setState({
+                  synced: true,
+                  scaleBpm: this.props.bpm,
+                  scaleTimeSig: this.props.timeSig,
+                  scaleNoteLen: this.props.noteLength,
+                })}
+                title={synced ? 'Synced with Global Playback' : 'Sync with Global Playback'}
+                aria-label="Sync with global playback"
+              >
+                {synced ? '⟳ Synced' : '⟳ Sync'}
+              </button>
+              <button
+                className="fb-scale-more-btn"
+                onClick={() => this.setState(s => ({ showScaleControls: !s.showScaleControls }))}
+                title={showScaleControls ? 'Hide scale controls' : 'Show scale controls'}
+                aria-label={showScaleControls ? 'Hide scale controls' : 'Show scale controls'}
+              >
+                {showScaleControls ? '▲' : '▼'}
+              </button>
             </div>
 
-            <div className="fb-scale-controls-row">
-              <div className="fb-scale-bpm-group">
-                <label className="fb-scale-label">BPM</label>
-                <input type="range" className="fb-scale-bpm-slider"
-                       min={40} max={240} step={1} value={scaleBpm}
-                       onChange={e => this.setState({ scaleBpm: +e.currentTarget.value })} />
-                <span className="fb-scale-bpm-value">{scaleBpm}</span>
-              </div>
-              <div className="fb-scale-nl-group">
-                {NOTE_LENGTH_OPTIONS.map(nl => (
-                  <button key={nl}
-                          className={`fb-scale-nl-btn${scaleNoteLen === nl ? ' fb-scale-nl-btn--active' : ''}`}
-                          onClick={() => this.setState({ scaleNoteLen: nl })}>
-                    {NOTE_LENGTH_LABEL[nl]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="fb-scale-ts-row">
-              {TIME_SIG_GROUPS.map((group, gi) => (
-                <div key={gi} className="fb-scale-ts-group">
-                  <span className="fb-scale-ts-category">{group.category}</span>
-                  <div className="fb-scale-ts-btns">
-                    {group.sigs.map(ts => (
-                      <button key={ts.label}
-                              className={`fb-scale-ts-btn${scaleTimeSig.label === ts.label ? ' fb-scale-ts-btn--active' : ''}`}
-                              onClick={() => this.setState({ scaleTimeSig: ts })}
-                              title={`${ts.beats} beat${ts.beats !== 1 ? 's' : ''} per measure`}>
-                        {ts.label}
+            {/* Collapsible: BPM / note length / time sig */}
+            {showScaleControls && (
+              <>
+                <div className="fb-scale-controls-row">
+                  <div className="fb-scale-bpm-group">
+                    <label className="fb-scale-label">BPM</label>
+                    <input type="range" className="fb-scale-bpm-slider"
+                           min={40} max={240} step={1} value={scaleBpm}
+                           onChange={e => this.setState({ scaleBpm: +e.currentTarget.value, synced: false })} />
+                    <span className="fb-scale-bpm-value">{scaleBpm}</span>
+                  </div>
+                  <div className="fb-scale-nl-group">
+                    {NOTE_LENGTH_OPTIONS.map(nl => (
+                      <button key={nl}
+                              className={`fb-scale-nl-btn${scaleNoteLen === nl ? ' fb-scale-nl-btn--active' : ''}`}
+                              onClick={() => this.setState({ scaleNoteLen: nl, synced: false })}>
+                        {NOTE_LENGTH_LABEL[nl]}
                       </button>
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="fb-scale-ts-row">
+                  {TIME_SIG_GROUPS.map((group, gi) => (
+                    <div key={gi} className="fb-scale-ts-group">
+                      <span className="fb-scale-ts-category">{group.category}</span>
+                      <div className="fb-scale-ts-btns">
+                        {group.sigs.map(ts => (
+                          <button key={ts.label}
+                                  className={`fb-scale-ts-btn${scaleTimeSig.label === ts.label ? ' fb-scale-ts-btn--active' : ''}`}
+                                  onClick={() => this.setState({ scaleTimeSig: ts, synced: false })}
+                                  title={`${ts.beats} beat${ts.beats !== 1 ? 's' : ''} per measure`}>
+                            {ts.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
           </div>
         )}
 

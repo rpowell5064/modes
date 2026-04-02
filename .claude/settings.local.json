@@ -16,7 +16,9 @@
       "WebFetch(domain:www.guitarscale.org)",
       "WebFetch(domain:www.theguitarlesson.com)",
       "WebFetch(domain:altguitar.com)",
-      "WebFetch(domain:www.guitarcommand.com)"
+      "WebFetch(domain:www.guitarcommand.com)",
+      "Bash(npx react-scripts:*)",
+      "Bash(NODE_OPTIONS=--openssl-legacy-provider npx react-scripts build)"
     ]
   }
 }

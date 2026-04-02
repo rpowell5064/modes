@@ -1,7 +1,6 @@
 /* ── CSS Variables ───────────────────────────────────────────────────────── */
 :root {
   --nav-h:      56px;
-  --tuning-h:   38px;
   --bg-base:    #0d1117;
   --bg-panel:   #161c24;
   --bg-card:    #1e2530;
@@ -14,7 +13,7 @@
 }
 
 .App {
-  padding-top: calc(var(--nav-h) + var(--tuning-h));
+  padding-top: var(--nav-h);
   background: var(--bg-base);
   min-height: 100vh;
   overflow-x: hidden;
@@ -26,7 +25,7 @@
   justify-content: center;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 28px 24px 0;
+  padding: 6px 24px 0;
 }
 
 /* ── Navigation bar ──────────────────────────────────────────────────────── */
@@ -113,32 +112,29 @@
 }
 
 /* ── Tuning bar ──────────────────────────────────────────────────────────── */
-.tuning-bar {
+.playback-tuning-group {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
   gap: 4px;
-  width: 100%;
-  height: var(--tuning-h);
-  padding: 0 16px;
-  background: var(--bg-panel);
-  border-bottom: 1px solid var(--border);
-  position: fixed;
-  top: var(--nav-h);
-  left: 0;
-  right: 0;
-  z-index: 999998;
-  box-sizing: border-box;
 }
 
-.drop-down-label {
-  color: var(--text-2);
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding-right: 4px;
+.playback-tuning-shift-btn {
+  background: none;
+  border: 1.5px solid #1e3a50;
+  border-radius: 5px;
+  color: #4a7a90;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 9px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.playback-tuning-shift-btn:hover {
+  color: #80c8e8;
+  border-color: #2a6a88;
+  background: #0d2030;
 }
 
 .tuning-select {
@@ -160,7 +156,6 @@
 @media (max-width: 600px) {
   :root {
     --nav-h:    48px;
-    --tuning-h: 34px;
   }
 
   /* ── Nav ── */
@@ -206,27 +201,26 @@
     min-width: 46px;
   }
 
-  /* ── Tuning bar ── */
-  .tuning-bar {
-    gap: 2px;
-    padding: 0 8px;
-  }
-
   .tuning-select {
     width: 40px;
     font-size: 11px;
   }
 
   /* ── Fretboard area ──
-     Remove justify-content: center — it clips the left edge and prevents
-     left-to-right horizontal scrolling on touch devices.
-     Start from the left so the user can scroll right to see all 22 frets. */
+     Horizontal-only scroll container. The fretboard is ~1020px wide on mobile
+     (22 frets × 44px + open + nut) so the user drags left/right to see more.
+     touch-action: pan-x  → browser handles horizontal swipes natively,
+                             vertical swipes pass through to page scroll,
+                             taps still fire click events on note dots. */
   .fretboard-area {
     justify-content: flex-start;
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
-    padding: 12px 0 0;
-    touch-action: pan-x pan-y;
+    padding: 4px 0 0;
+    touch-action: pan-x;
+    /* Stop "bounce to go back" gesture from firing at scroll edges */
+    overscroll-behavior-x: contain;
   }
 }
 
@@ -258,6 +252,199 @@
 /* ── Print-only title (hidden on screen) ─────────────────────────────────── */
 .print-title {
   display: none;
+}
+
+/* ── Shared playback controls ────────────────────────────────────────────── */
+.playback-bar {
+  background: #0a1520;
+  border-top: 2px solid #1e3a48;
+}
+
+.playback-bar-body {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 10px 14px 12px;
+  gap: 0;
+}
+
+/* Left column: title + BPM/note + time-sig */
+.playback-time-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.playback-bar-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #5a8898;
+}
+
+/* BPM + note length on a single row */
+.playback-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.playback-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #5a8898;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.playback-bpm-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.playback-bpm-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 90px;
+  height: 4px;
+  border-radius: 2px;
+  background: #1e3a48;
+  outline: none;
+  cursor: pointer;
+}
+
+.playback-bpm-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #38bdf8;
+  border: 2px solid #0a1a28;
+  cursor: pointer;
+}
+
+.playback-bpm-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #38bdf8;
+  border: 2px solid #0a1a28;
+  cursor: pointer;
+}
+
+.playback-bpm-value {
+  font-size: 11px;
+  font-weight: 700;
+  color: #80c8e8;
+  min-width: 26px;
+  text-align: right;
+}
+
+.playback-note-length-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.playback-nl-btn {
+  background: none;
+  border: 1px solid #243e4e;
+  border-radius: 5px;
+  color: #5a8898;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+  white-space: nowrap;
+}
+
+.playback-nl-btn:hover          { color: #a0c8d8; border-color: #3a6a80; }
+.playback-nl-btn--active        { background: #1a4a60; border-color: #38bdf8; color: #80c8e8; }
+
+.playback-timesig-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.playback-ts-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.playback-ts-category {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3a5a6e;
+}
+
+.playback-ts-btns {
+  display: flex;
+  gap: 3px;
+}
+
+.playback-ts-btn {
+  background: none;
+  border: 1px solid #1e3a4a;
+  border-radius: 5px;
+  color: #4a7080;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+  min-width: 28px;
+  text-align: center;
+}
+
+.playback-ts-btn:hover    { color: #90b8c8; border-color: #2a5a70; }
+.playback-ts-btn--active  { background: #123040; border-color: #38bdf8; color: #70c8e8; }
+
+/* Right column: tuning — separated by a vertical divider */
+.playback-tuning-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 16px;
+  margin-left: 16px;
+  border-left: 1px solid #1e3a48;
+  flex-shrink: 0;
+}
+
+.playback-tuning-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .playback-bar-body {
+    flex-direction: column;
+    padding: 8px 10px 10px;
+    gap: 10px;
+  }
+  .playback-tuning-col {
+    border-left: none;
+    border-top: 1px solid #1e3a48;
+    padding-left: 0;
+    margin-left: 0;
+    padding-top: 8px;
+  }
+  .playback-bpm-slider { width: 80px; }
+  .playback-ts-btn     { padding: 2px 4px; font-size: 10px; min-width: 26px; }
 }
 
 /* ── Tools row: metronome + tuner side-by-side ───────────────────────────── */
@@ -328,11 +515,8 @@
     display: none;           /* hide entirely — print-title replaces it */
   }
 
-  .tuning-bar {
-    display: none;
-  }
-
   .tools-row,
+  .playback-bar,
   .fb-scale-ctrl {
     display: none;
   }
@@ -360,11 +544,6 @@
   /* ── Chord progression ── */
   .prog-play-btn,
   .prog-nav-btn,
-  .prog-bpm-slider,
-  .prog-bpm-value,
-  .prog-ctrl-label,
-  .prog-note-length-group,
-  .prog-timesig-row,
   .prog-dots {
     display: none;
   }
