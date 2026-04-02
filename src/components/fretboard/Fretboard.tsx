@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { Note } from '../note/Note';
 import './Fretboard.css';
 import { Modes } from '../../models/modes';
@@ -490,7 +491,7 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
 
     const positions = showPattern ? this.computePositions() : [];
 
-    return (
+    const fretboardEl = (
       <div className="fretboard">
 
         {/* ── Pattern overlay ─────────────────────────────────────────── */}
@@ -620,96 +621,106 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
           </div>
         )}
 
-        {/* ── Scale Playback Controls ──────────────────────────────────── */}
-        {showPattern && (
-          <div className="fb-scale-ctrl">
+      </div>
+    );
 
-            {/* Always-visible row: title · beat dots · play · sync · expand */}
-            <div className="fb-scale-top-row">
-              <span className="fb-scale-title">Scale Playback</span>
-              <div className="fb-scale-beats">
-                {Array.from({ length: scaleTimeSig.beats }, (_, b) => (
-                  <span key={b}
-                        className={`fb-scale-beat${isPlayingScale && scaleBeat === b ? ' fb-scale-beat--on' : ''}`} />
+    // ── Scale Playback Controls — portaled outside the scroll container ──────
+    const scaleCtrlRoot = document.getElementById('scale-ctrl-root');
+    const scaleCtrl = showPattern ? (
+      <div className="fb-scale-ctrl">
+
+        {/* Always-visible row: title · beat dots · play · sync · expand */}
+        <div className="fb-scale-top-row">
+          <span className="fb-scale-title">Scale Playback</span>
+          <div className="fb-scale-beats">
+            {Array.from({ length: scaleTimeSig.beats }, (_, b) => (
+              <span key={b}
+                    className={`fb-scale-beat${isPlayingScale && scaleBeat === b ? ' fb-scale-beat--on' : ''}`} />
+            ))}
+          </div>
+          <button
+            className={`fb-scale-play${isPlayingScale ? ' fb-scale-play--playing' : ''}`}
+            onClick={() => isPlayingScale ? this.stopScalePlay() : this.startScalePlay()}
+            disabled={soloPattern === null}
+            aria-label={isPlayingScale ? 'Stop scale' : 'Play scale'}
+          >
+            {isPlayingScale ? '■' : '▶'}
+          </button>
+          <button
+            className={`fb-scale-sync-btn${synced ? ' fb-scale-sync-btn--active' : ''}`}
+            onClick={() => this.setState({
+              synced: true,
+              scaleBpm: this.props.bpm,
+              scaleTimeSig: this.props.timeSig,
+              scaleNoteLen: this.props.noteLength,
+            })}
+            title={synced ? 'Synced with Global Playback' : 'Sync with Global Playback'}
+            aria-label="Sync with global playback"
+          >
+            {synced ? '⟳ Synced' : '⟳ Sync'}
+          </button>
+          <button
+            className="fb-scale-more-btn"
+            onClick={() => this.setState(s => ({ showScaleControls: !s.showScaleControls }))}
+            title={showScaleControls ? 'Hide scale controls' : 'Show scale controls'}
+            aria-label={showScaleControls ? 'Hide scale controls' : 'Show scale controls'}
+          >
+            {showScaleControls ? '▲' : '▼'}
+          </button>
+        </div>
+
+        {/* Collapsible: BPM / note length / time sig */}
+        {showScaleControls && (
+          <>
+            <div className="fb-scale-controls-row">
+              <div className="fb-scale-bpm-group">
+                <label className="fb-scale-label">BPM</label>
+                <input type="range" className="fb-scale-bpm-slider"
+                       min={40} max={240} step={1} value={scaleBpm}
+                       onChange={e => this.setState({ scaleBpm: +e.currentTarget.value, synced: false })} />
+                <span className="fb-scale-bpm-value">{scaleBpm}</span>
+              </div>
+              <div className="fb-scale-nl-group">
+                {NOTE_LENGTH_OPTIONS.map(nl => (
+                  <button key={nl}
+                          className={`fb-scale-nl-btn${scaleNoteLen === nl ? ' fb-scale-nl-btn--active' : ''}`}
+                          onClick={() => this.setState({ scaleNoteLen: nl, synced: false })}>
+                    {NOTE_LENGTH_LABEL[nl]}
+                  </button>
                 ))}
               </div>
-              <button
-                className={`fb-scale-play${isPlayingScale ? ' fb-scale-play--playing' : ''}`}
-                onClick={() => isPlayingScale ? this.stopScalePlay() : this.startScalePlay()}
-                disabled={soloPattern === null}
-                aria-label={isPlayingScale ? 'Stop scale' : 'Play scale'}
-              >
-                {isPlayingScale ? '■' : '▶'}
-              </button>
-              <button
-                className={`fb-scale-sync-btn${synced ? ' fb-scale-sync-btn--active' : ''}`}
-                onClick={() => this.setState({
-                  synced: true,
-                  scaleBpm: this.props.bpm,
-                  scaleTimeSig: this.props.timeSig,
-                  scaleNoteLen: this.props.noteLength,
-                })}
-                title={synced ? 'Synced with Global Playback' : 'Sync with Global Playback'}
-                aria-label="Sync with global playback"
-              >
-                {synced ? '⟳ Synced' : '⟳ Sync'}
-              </button>
-              <button
-                className="fb-scale-more-btn"
-                onClick={() => this.setState(s => ({ showScaleControls: !s.showScaleControls }))}
-                title={showScaleControls ? 'Hide scale controls' : 'Show scale controls'}
-                aria-label={showScaleControls ? 'Hide scale controls' : 'Show scale controls'}
-              >
-                {showScaleControls ? '▲' : '▼'}
-              </button>
             </div>
 
-            {/* Collapsible: BPM / note length / time sig */}
-            {showScaleControls && (
-              <>
-                <div className="fb-scale-controls-row">
-                  <div className="fb-scale-bpm-group">
-                    <label className="fb-scale-label">BPM</label>
-                    <input type="range" className="fb-scale-bpm-slider"
-                           min={40} max={240} step={1} value={scaleBpm}
-                           onChange={e => this.setState({ scaleBpm: +e.currentTarget.value, synced: false })} />
-                    <span className="fb-scale-bpm-value">{scaleBpm}</span>
-                  </div>
-                  <div className="fb-scale-nl-group">
-                    {NOTE_LENGTH_OPTIONS.map(nl => (
-                      <button key={nl}
-                              className={`fb-scale-nl-btn${scaleNoteLen === nl ? ' fb-scale-nl-btn--active' : ''}`}
-                              onClick={() => this.setState({ scaleNoteLen: nl, synced: false })}>
-                        {NOTE_LENGTH_LABEL[nl]}
+            <div className="fb-scale-ts-row">
+              {TIME_SIG_GROUPS.map((group, gi) => (
+                <div key={gi} className="fb-scale-ts-group">
+                  <span className="fb-scale-ts-category">{group.category}</span>
+                  <div className="fb-scale-ts-btns">
+                    {group.sigs.map(ts => (
+                      <button key={ts.label}
+                              className={`fb-scale-ts-btn${scaleTimeSig.label === ts.label ? ' fb-scale-ts-btn--active' : ''}`}
+                              onClick={() => this.setState({ scaleTimeSig: ts, synced: false })}
+                              title={`${ts.beats} beat${ts.beats !== 1 ? 's' : ''} per measure`}>
+                        {ts.label}
                       </button>
                     ))}
                   </div>
                 </div>
-
-                <div className="fb-scale-ts-row">
-                  {TIME_SIG_GROUPS.map((group, gi) => (
-                    <div key={gi} className="fb-scale-ts-group">
-                      <span className="fb-scale-ts-category">{group.category}</span>
-                      <div className="fb-scale-ts-btns">
-                        {group.sigs.map(ts => (
-                          <button key={ts.label}
-                                  className={`fb-scale-ts-btn${scaleTimeSig.label === ts.label ? ' fb-scale-ts-btn--active' : ''}`}
-                                  onClick={() => this.setState({ scaleTimeSig: ts, synced: false })}
-                                  title={`${ts.beats} beat${ts.beats !== 1 ? 's' : ''} per measure`}>
-                            {ts.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-          </div>
+              ))}
+            </div>
+          </>
         )}
 
       </div>
+    ) : null;
+
+    return (
+      <>
+        {fretboardEl}
+        {scaleCtrl && scaleCtrlRoot
+          ? ReactDOM.createPortal(scaleCtrl, scaleCtrlRoot)
+          : scaleCtrl}
+      </>
     );
   }
 }

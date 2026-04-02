@@ -218,7 +218,9 @@
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     padding: 4px 0 0;
-    touch-action: pan-x;
+    /* pan-x + pan-y: horizontal scroll works within the area, vertical
+       pan has no scrollable content here so it propagates to the page. */
+    touch-action: pan-x pan-y;
     /* Stop "bounce to go back" gesture from firing at scroll edges */
     overscroll-behavior-x: contain;
   }
@@ -447,16 +449,100 @@
   .playback-ts-btn     { padding: 2px 4px; font-size: 10px; min-width: 26px; }
 }
 
-/* ── Tools row: metronome + tuner side-by-side ───────────────────────────── */
-.tools-row {
+/* ── Slide-out Tools Panel ───────────────────────────────────────────────── */
+.tools-panel-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+.tools-panel-overlay--open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tools-panel {
+  position: fixed;
+  top: var(--nav-h);
+  right: 0;
+  bottom: 0;
+  width: 380px;
+  max-width: 100vw;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border);
+  z-index: 10001;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
-  flex-direction: row;
-  align-items: stretch;
+  flex-direction: column;
+}
+
+.tools-panel--open {
+  transform: translateX(0);
+}
+
+.tools-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tools-panel-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.tools-panel-close {
+  background: none;
+  border: none;
+  color: var(--text-2);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.tools-panel-close:hover {
+  color: var(--text-1);
+}
+
+/* Suppress top border on the first component inside the panel */
+.tools-panel .metronome-section,
+.tools-panel .tuner-section {
+  border-top: none;
+  border-bottom: 1px solid var(--border);
+  flex: unset;
 }
 
 @media (max-width: 600px) {
-  .tools-row {
-    flex-direction: column;
+  .tools-panel {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 72vh;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    transform: translateY(100%);
+    border-radius: 14px 14px 0 0;
+  }
+
+  .tools-panel--open {
+    transform: translateY(0);
   }
 }
 

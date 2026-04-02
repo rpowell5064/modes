@@ -17,14 +17,15 @@ import {
 
 interface IMode { keySig: number, mode: number };
 interface IModeState {
-    keySig:      number;
-    mode:        number;
-    numOfStrings: number;
-    tuning:      number[];
-    showPattern: boolean;
-    bpm:         number;
-    timeSig:     TimeSig;
-    noteLength:  NoteLength;
+    keySig:         number;
+    mode:           number;
+    numOfStrings:   number;
+    tuning:         number[];
+    showPattern:    boolean;
+    bpm:            number;
+    timeSig:        TimeSig;
+    noteLength:     NoteLength;
+    toolsPanelOpen: boolean;
 }
 
 const DEFAULT_TUNINGS: Record<number, number[]> = {
@@ -49,14 +50,15 @@ export default class App extends React.Component<{}, IModeState> {
   constructor(props: IMode) {
     super(props);
     this.state = {
-      keySig:       57,
-      mode:         0,
-      numOfStrings: 6,
-      tuning:       DEFAULT_TUNINGS[6],
-      showPattern:  true,
-      bpm:          DEFAULT_BPM,
-      timeSig:      ALL_TIME_SIGS[0],
-      noteLength:   DEFAULT_NOTE_LEN,
+      keySig:         57,
+      mode:           0,
+      numOfStrings:   6,
+      tuning:         DEFAULT_TUNINGS[6],
+      showPattern:    true,
+      bpm:            DEFAULT_BPM,
+      timeSig:        ALL_TIME_SIGS[0],
+      noteLength:     DEFAULT_NOTE_LEN,
+      toolsPanelOpen: false,
     } as IModeState;
   }
 
@@ -107,7 +109,7 @@ export default class App extends React.Component<{}, IModeState> {
       </select>
     ));
 
-    const { bpm, timeSig, noteLength } = this.state;
+    const { bpm, timeSig, noteLength, toolsPanelOpen } = this.state;
 
     return (
       <div className="App">
@@ -157,6 +159,16 @@ export default class App extends React.Component<{}, IModeState> {
                 PDF
               </button>
             </div>
+            <div className="nav-control-group">
+              <button
+                type='button'
+                className={`button${toolsPanelOpen ? ' active' : ''}`}
+                onClick={ () => this.setState(s => ({ toolsPanelOpen: !s.toolsPanelOpen })) }
+                title='Metronome & Tuner'
+              >
+                🎛 Tools
+              </button>
+            </div>
           </div>
         </nav>
 
@@ -184,6 +196,9 @@ export default class App extends React.Component<{}, IModeState> {
             noteLength={ this.state.noteLength }
           />
         </div>
+
+        {/* Portal target for Scale Playback controls — outside horizontal scroll */}
+        <div id="scale-ctrl-root" />
 
         {/* Shared playback controls — one set for the whole page */}
         <div className="playback-bar">
@@ -251,7 +266,20 @@ export default class App extends React.Component<{}, IModeState> {
           </div>{/* end playback-bar-body */}
         </div>
 
-        <div className="tools-row">
+        {/* ── Slide-out Tools Panel ───────────────────────────────────── */}
+        <div
+          className={`tools-panel-overlay${toolsPanelOpen ? ' tools-panel-overlay--open' : ''}`}
+          onClick={ () => this.setState({ toolsPanelOpen: false }) }
+        />
+        <div className={`tools-panel${toolsPanelOpen ? ' tools-panel--open' : ''}`}>
+          <div className="tools-panel-header">
+            <span className="tools-panel-title">Tools</span>
+            <button
+              className="tools-panel-close"
+              onClick={ () => this.setState({ toolsPanelOpen: false }) }
+              aria-label="Close tools panel"
+            >✕</button>
+          </div>
           <MetronomeSection guitarService={this.guitarService} bpm={bpm} timeSig={timeSig} />
           <TunerSection     guitarService={this.guitarService} tuning={this.state.tuning} />
         </div>
