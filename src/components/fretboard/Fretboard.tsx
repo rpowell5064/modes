@@ -35,6 +35,7 @@ interface FretboardState {
   activeNote:        { stringIdx: number; fret: number } | null;
   synced:            boolean;
   showScaleControls: boolean;
+  scaleCtrlRoot:     Element | null;
 }
 
 const INLAY_FRETS     = new Set([3, 5, 7, 9, 12, 15, 17, 19, 21]);
@@ -88,6 +89,7 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
       activeNote:        null,
       synced:            true,
       showScaleControls: false,
+      scaleCtrlRoot:     null,
     };
     this.handleResize = this.handleResize.bind(this);
   }
@@ -95,6 +97,7 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
   componentDidMount() {
     window.addEventListener('resize', this.handleResize);
     if (this.props.showPattern) this.selectKeyPattern();
+    this.setState({ scaleCtrlRoot: document.getElementById('scale-ctrl-root') });
   }
 
   componentWillUnmount() {
@@ -625,8 +628,8 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
     );
 
     // ── Scale Playback Controls — portaled outside the scroll container ──────
-    const scaleCtrlRoot = document.getElementById('scale-ctrl-root');
-    const scaleCtrl = showPattern ? (
+    const { scaleCtrlRoot } = this.state;
+    const scaleCtrl = (
       <div className="fb-scale-ctrl">
 
         {/* Always-visible row: title · beat dots · play · sync · expand */}
@@ -712,7 +715,7 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
         )}
 
       </div>
-    ) : null;
+    );
 
     return (
       <>

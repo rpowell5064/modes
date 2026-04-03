@@ -128,6 +128,7 @@
     color: #0a1a28;
 }
 
+
 /* ── Pagination dots ──────────────────────────────────────────────────────── */
 .prog-dots {
     display: flex;
@@ -308,6 +309,63 @@
     color: #70c8e8;
 }
 
+/* ── Song override header ─────────────────────────────────────────────────── */
+.prog-song-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.prog-song-title {
+    color: #adff2f;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.prog-song-sep {
+    color: #3a5a6a;
+    flex-shrink: 0;
+}
+
+.prog-song-artist {
+    color: #7ab8d0;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+
+.prog-song-clear {
+    background: none;
+    border: 1px solid #2a4a5a;
+    border-radius: 50%;
+    color: #5a8898;
+    font-size: 10px;
+    line-height: 1;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.12s, border-color 0.12s;
+}
+
+.prog-song-clear:hover {
+    color: #f87171;
+    border-color: #7a2020;
+}
+
 /* ── Chord diagrams row ───────────────────────────────────────────────────── */
 .prog-card-chords {
     display: flex;
@@ -316,6 +374,11 @@
     flex-wrap: nowrap;
     overflow-x: auto;
     padding-bottom: 4px;
+}
+
+.prog-card-chords--song {
+    flex-wrap: wrap;
+    overflow-x: visible;
 }
 
 /* Slot wrapper */

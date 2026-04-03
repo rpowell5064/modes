@@ -251,6 +251,20 @@
   background: rgba(253, 224, 71, 0.08);
 }
 
+/* Metronome running — dim green resting state */
+.button--metro-on {
+  border-color: #2a6a1a;
+  color: #6a9a3a;
+}
+
+/* Beat flash — instant on, fades out via the existing .button transition */
+.button--beat {
+  border-color: #adff2f !important;
+  color: #adff2f !important;
+  background: rgba(173, 255, 47, 0.12) !important;
+  transition: none !important;
+}
+
 /* ── Print-only title (hidden on screen) ─────────────────────────────────── */
 .print-title {
   display: none;

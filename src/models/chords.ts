@@ -261,6 +261,31 @@ export const COMMON_PROGRESSIONS: ChordProgression[] = [
     },
 ];
 
+// ── Song chord parsing ────────────────────────────────────────────────────────
+
+const CHORD_NAME_MIDI: Record<string, number> = {
+    'C': 48, 'C#': 49, 'Db': 49, 'D': 50, 'D#': 51, 'Eb': 51,
+    'E': 52, 'Fb': 52, 'F': 53, 'E#': 53, 'F#': 54, 'Gb': 54,
+    'G': 55, 'G#': 56, 'Ab': 56, 'A': 57, 'A#': 58, 'Bb': 58,
+    'B': 59, 'Cb': 59, 'B#': 48,
+};
+
+/** Parse a chord name string (e.g. "Am7", "Fmaj7", "Bdim") into a ChordDefinition. */
+export function chordNameToDefinition(name: string, tuning: number[]): ChordDefinition | null {
+    if (!name || name === '.') return null;
+    const m = name.match(/^([A-G][b#]?)(.*)$/);
+    if (!m) return null;
+    const rootMidi = CHORD_NAME_MIDI[m[1]];
+    if (rootMidi === undefined) return null;
+    const suffix = m[2];
+    const sl = suffix.toLowerCase();
+    let quality: ChordQuality = 'maj';
+    if      (sl.startsWith('dim'))               quality = 'dim';
+    else if (sl.startsWith('aug') || sl === '+') quality = 'aug';
+    else if (sl.length > 0 && sl[0] === 'm' && !sl.startsWith('maj')) quality = 'min';
+    return { rootMidi, quality, name, numeral: '', voicing: findVoicing(rootMidi, quality, tuning) };
+}
+
 export function getProgressionChords(
     keySig: number,
     progression: ChordProgression,

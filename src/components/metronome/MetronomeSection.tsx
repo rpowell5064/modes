@@ -4,12 +4,14 @@ import { GuitarService } from '../../services/guitar.service';
 import { TimeSig, LOOKAHEAD_S, TICK_MS } from '../../models/playback';
 
 interface IMetronome {
-    guitarService: GuitarService;
-    bpm:     number;
-    timeSig: TimeSig;
+    guitarService:    GuitarService;
+    bpm:              number;
+    timeSig:          TimeSig;
+    onPlayingChange?: (playing: boolean) => void;
+    onBeat?:          (beatIndex: number) => void;
 }
 
-export function MetronomeSection({ guitarService, bpm, timeSig }: IMetronome) {
+export function MetronomeSection({ guitarService, bpm, timeSig, onPlayingChange, onBeat }: IMetronome) {
     const [isPlaying,  setIsPlaying]  = useState(false);
     const [activeBeat, setActiveBeat] = useState(-1);
 
@@ -24,6 +26,9 @@ export function MetronomeSection({ guitarService, bpm, timeSig }: IMetronome) {
     useEffect(() => { bpmRef.current     = bpm;    }, [bpm]);
     useEffect(() => { timeSigRef.current = timeSig; }, [timeSig]);
 
+    const onBeatRef = useRef(onBeat);
+    useEffect(() => { onBeatRef.current = onBeat; }, [onBeat]);
+
     const tickRef = useRef<() => void>(() => {});
     useEffect(() => {
         tickRef.current = () => {
@@ -37,7 +42,10 @@ export function MetronomeSection({ guitarService, bpm, timeSig }: IMetronome) {
                 const t       = nextBeatTimeRef.current;
                 guitarService.playClick(t, bi === 0);
                 const delayMs = Math.max((t - ctx.currentTime) * 1000, 0);
-                const timer   = window.setTimeout(() => setActiveBeat(bi), delayMs);
+                const timer   = window.setTimeout(() => {
+                    setActiveBeat(bi);
+                    onBeatRef.current?.(bi);
+                }, delayMs);
                 uiTimersRef.current.push(timer);
                 nextBeatTimeRef.current += beatSec;
                 nextBeatIdxRef.current   = (bi + 1) % ts.beats;
@@ -56,7 +64,8 @@ export function MetronomeSection({ guitarService, bpm, timeSig }: IMetronome) {
         teardown();
         setIsPlaying(false);
         setActiveBeat(-1);
-    }, [teardown]);
+        onPlayingChange?.(false);
+    }, [teardown, onPlayingChange]);
 
     const play = useCallback(() => {
         teardown();
@@ -70,8 +79,9 @@ export function MetronomeSection({ guitarService, bpm, timeSig }: IMetronome) {
             schedulerRef.current = window.setInterval(() => tickRef.current(), TICK_MS);
             setIsPlaying(true);
             setActiveBeat(0);
+            onPlayingChange?.(true);
         });
-    }, [guitarService, teardown]);
+    }, [guitarService, teardown, onPlayingChange]);
 
     useEffect(() => () => teardown(), [teardown]);
 

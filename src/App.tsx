@@ -3,6 +3,7 @@ import './App.css';
 import { Fretboard } from './components/fretboard/Fretboard';
 import { ChordSection } from './components/chords/ChordSection';
 import { ProgressionSection } from './components/chords/ProgressionSection';
+import { SongSearchSection, SongApplyPayload } from './components/songSearch/SongSearchSection';
 import { MetronomeSection } from './components/metronome/MetronomeSection';
 import { TunerSection } from './components/tuner/TunerSection';
 import { Constants } from './models/constants';
@@ -16,16 +17,25 @@ import {
 } from './models/playback';
 
 interface IMode { keySig: number, mode: number };
+interface SongOverride {
+    title:  string;
+    artist: string;
+    chords: string[];
+}
+
 interface IModeState {
-    keySig:         number;
-    mode:           number;
-    numOfStrings:   number;
-    tuning:         number[];
-    showPattern:    boolean;
-    bpm:            number;
-    timeSig:        TimeSig;
-    noteLength:     NoteLength;
-    toolsPanelOpen: boolean;
+    keySig:          number;
+    mode:            number;
+    numOfStrings:    number;
+    tuning:          number[];
+    showPattern:     boolean;
+    bpm:             number;
+    timeSig:         TimeSig;
+    noteLength:      NoteLength;
+    toolsPanelOpen:  boolean;
+    metronomeActive: boolean;
+    toolsBeat:       boolean;
+    songOverride:    SongOverride | null;
 }
 
 const DEFAULT_TUNINGS: Record<number, number[]> = {
@@ -45,7 +55,8 @@ function getClosestMidi(noteClass: number, reference: number): number {
 }
 
 export default class App extends React.Component<{}, IModeState> {
-  private guitarService = new GuitarService();
+  private guitarService    = new GuitarService();
+  private beatFlashTimer: number | null = null;
 
   constructor(props: IMode) {
     super(props);
@@ -54,11 +65,14 @@ export default class App extends React.Component<{}, IModeState> {
       mode:           0,
       numOfStrings:   6,
       tuning:         DEFAULT_TUNINGS[6],
-      showPattern:    true,
-      bpm:            DEFAULT_BPM,
-      timeSig:        ALL_TIME_SIGS[0],
-      noteLength:     DEFAULT_NOTE_LEN,
-      toolsPanelOpen: false,
+      showPattern:    false,
+      bpm:             DEFAULT_BPM,
+      timeSig:         ALL_TIME_SIGS[0],
+      noteLength:      DEFAULT_NOTE_LEN,
+      toolsPanelOpen:  false,
+      metronomeActive: false,
+      toolsBeat:       false,
+      songOverride:    null,
     } as IModeState;
   }
 
@@ -85,6 +99,25 @@ export default class App extends React.Component<{}, IModeState> {
     this.setState({ tuning: this.state.tuning.map(midi => midi + delta) });
   }
 
+  handleSongApply(payload: SongApplyPayload): void {
+    this.setState({
+      keySig:       payload.keySig,
+      mode:         payload.modeIndex,
+      tuning:       payload.tuning,
+      numOfStrings: payload.numStrings,
+      songOverride: payload.song,
+    });
+  }
+
+  handleMetronomeBeat(): void {
+    if (this.beatFlashTimer !== null) window.clearTimeout(this.beatFlashTimer);
+    this.setState({ toolsBeat: true });
+    this.beatFlashTimer = window.setTimeout(() => {
+      this.setState({ toolsBeat: false });
+      this.beatFlashTimer = null;
+    }, 120);
+  }
+
   render() {
     const keys = Constants.keys().map((note, key) => (
       <option value={ note.key } key={ key }>{ note.value }</option>
@@ -109,7 +142,7 @@ export default class App extends React.Component<{}, IModeState> {
       </select>
     ));
 
-    const { bpm, timeSig, noteLength, toolsPanelOpen } = this.state;
+    const { bpm, timeSig, noteLength, toolsPanelOpen, metronomeActive, toolsBeat } = this.state;
 
     return (
       <div className="App">
@@ -120,6 +153,16 @@ export default class App extends React.Component<{}, IModeState> {
             <span className="nav-title">Fretboard</span>
           </div>
           <div className="nav-controls">
+            <div className="nav-control-group">
+              <button
+                type='button'
+                className={`button${toolsPanelOpen ? ' active' : ''}${metronomeActive && !toolsPanelOpen ? ' button--metro-on' : ''}${toolsBeat && !toolsPanelOpen ? ' button--beat' : ''}`}
+                onClick={ () => this.setState(s => ({ toolsPanelOpen: !s.toolsPanelOpen })) }
+                title='Metronome & Tuner'
+              >
+                🎛 Tools
+              </button>
+            </div>
             <div className="nav-control-group">
               <label className="nav-label" htmlFor='key-select'>Key</label>
               <select id='key-select' value={ this.state.keySig } onChange={ this.handleKeySigChange.bind(this) }>
@@ -145,8 +188,9 @@ export default class App extends React.Component<{}, IModeState> {
                 type='button'
                 className={`button${this.state.showPattern ? ' active' : ''}`}
                 onClick={ () => this.setState(s => ({ showPattern: !s.showPattern })) }
+                title='Experimental: scale pattern overlay'
               >
-                Pattern
+                Pattern ⚗
               </button>
             </div>
             <div className="nav-control-group">
@@ -157,16 +201,6 @@ export default class App extends React.Component<{}, IModeState> {
                 title='Export as PDF via browser print dialog'
               >
                 PDF
-              </button>
-            </div>
-            <div className="nav-control-group">
-              <button
-                type='button'
-                className={`button${toolsPanelOpen ? ' active' : ''}`}
-                onClick={ () => this.setState(s => ({ toolsPanelOpen: !s.toolsPanelOpen })) }
-                title='Metronome & Tuner'
-              >
-                🎛 Tools
               </button>
             </div>
           </div>
@@ -280,9 +314,21 @@ export default class App extends React.Component<{}, IModeState> {
               aria-label="Close tools panel"
             >✕</button>
           </div>
-          <MetronomeSection guitarService={this.guitarService} bpm={bpm} timeSig={timeSig} />
+          <MetronomeSection
+            guitarService={this.guitarService}
+            bpm={bpm}
+            timeSig={timeSig}
+            onPlayingChange={ active => this.setState({ metronomeActive: active }) }
+            onBeat={ this.handleMetronomeBeat.bind(this) }
+          />
           <TunerSection     guitarService={this.guitarService} tuning={this.state.tuning} />
         </div>
+
+        <SongSearchSection
+          onApply={ this.handleSongApply.bind(this) }
+          appliedSong={ this.state.songOverride }
+          onClearApplied={ () => this.setState({ songOverride: null }) }
+        />
 
         <ProgressionSection
           keySig={ this.state.keySig }
@@ -292,6 +338,8 @@ export default class App extends React.Component<{}, IModeState> {
           bpm={bpm}
           timeSig={timeSig}
           noteLength={noteLength}
+          songOverride={ this.state.songOverride ?? undefined }
+          onClearSong={ () => this.setState({ songOverride: null }) }
         />
 
         <ChordSection
