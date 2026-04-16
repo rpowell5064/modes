@@ -1,532 +1,372 @@
-/* ── CSS Variables ───────────────────────────────────────────────────────── */
-:root {
-  --nav-h:      56px;
-  --bg-base:    #0d1117;
-  --bg-panel:   #161c24;
-  --bg-card:    #1e2530;
-  --border:     #21282f;
-  --text-1:     #c9d1d9;
-  --text-2:     #8b949e;
-  --accent-g:   #4ade80;
-  --accent-r:   #f87171;
-  --accent-b:   #38bdf8;
-}
+/* ═══════════════════════════════════════════════════════════════
+   App layout — nav, page wrapper, playback bar, tools panel
+   ═══════════════════════════════════════════════════════════════ */
 
 .App {
   padding-top: var(--nav-h);
-  background: var(--bg-base);
+  background: var(--bg);
   min-height: 100vh;
   overflow-x: hidden;
 }
 
-/* ── Fretboard area — centered, horizontally scrollable ──────────────────── */
-.fretboard-area {
-  display: flex;
-  justify-content: center;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 6px 24px 0;
-}
-
-/* ── Navigation bar ──────────────────────────────────────────────────────── */
+/* ── Navigation bar ─────────────────────────────────────────────── */
 .app-nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   height: var(--nav-h);
-  padding: 0 24px;
-  background: var(--bg-base);
+  padding: 0 20px;
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 999999;
-  box-sizing: border-box;
+  top: 0; left: 0; right: 0;
+  z-index: 9999;
+  gap: 0;
 }
 
+/* Brand */
 .nav-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
+  margin-right: 4px;
 }
-
-.nav-icon {
-  font-size: 22px;
-  line-height: 1;
-  opacity: 0.85;
-}
-
+.nav-icon  { font-size: 20px; line-height: 1; }
 .nav-title {
-  color: var(--text-1);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  color: var(--text-1);
+  letter-spacing: -0.02em;
 }
 
-/* ── Page switcher tabs ──────────────────────────────────────────────────── */
+/* Page tabs */
 .nav-pages {
   display: flex;
   align-items: stretch;
   height: 100%;
-  margin: 0 8px;
+  margin: 0 4px;
 }
-
 .nav-page-btn {
-  padding: 0 16px;
+  padding: 0 14px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-2);
   font-size: 13px;
   font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
   transition: color 0.12s, border-color 0.12s;
   white-space: nowrap;
 }
+.nav-page-btn:hover         { color: var(--text-1); }
+.nav-page-btn--active       { color: var(--blue); border-bottom-color: var(--blue); }
 
-.nav-page-btn:hover { color: var(--text-1); }
-
-.nav-page-btn--active {
-  color: var(--accent-b);
-  border-bottom-color: var(--accent-b);
-}
-
+/* Controls — flush right, can scroll on very narrow viewports */
 .nav-controls {
   display: flex;
   align-items: stretch;
   height: 100%;
+  margin-left: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nav-control-group {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0 18px;
-  border-left: 1px solid var(--border);
+  padding: 0 14px;
+  border-left: 1px solid var(--border-muted);
+  flex-shrink: 0;
 }
 
 .nav-label {
-  color: var(--text-2);
   font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  color: var(--text-3);
+  margin-bottom: 3px;
   white-space: nowrap;
+  user-select: none;
 }
 
+/* Nav selects — bare, inherit nav font */
 .app-nav select {
   background: transparent;
   border: none;
   color: var(--text-1);
   font-size: 13px;
   font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
   outline: none;
   -webkit-appearance: none;
   appearance: none;
-  padding-right: 14px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%238b949e'/%3E%3C/svg%3E");
+  padding-right: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%236e7681'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 2px center;
-  min-width: 72px;
+  min-width: 68px;
 }
-
-.app-nav select option {
-  background: #1c2533;
+.app-nav select option,
+.app-nav select optgroup {
+  background: var(--surface-2);
   color: var(--text-1);
+  font-family: inherit;
 }
 
-/* ── Tuning bar ──────────────────────────────────────────────────────────── */
-.playback-tuning-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.playback-tuning-shift-btn {
-  background: none;
-  border: 1.5px solid #1e3a50;
-  border-radius: 5px;
-  color: #4a7a90;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 3px 9px;
+/* Nav buttons (Tools, Pattern, PDF) */
+.app-nav .button {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 5px 12px;
   cursor: pointer;
-  line-height: 1;
-  transition: color 0.12s, border-color 0.12s, background 0.12s;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.app-nav .button:hover   { background: var(--surface-2); border-color: var(--surface-3); color: var(--text-1); }
+.app-nav .button.active  { background: var(--yellow-bg); border-color: rgba(250,204,21,0.35); color: var(--yellow); }
+
+/* Metronome running — subtle green pulse */
+.app-nav .button--metro-on { border-color: rgba(74,222,128,0.25); color: var(--green-dim); }
+.app-nav .button--beat     {
+  border-color: var(--green) !important;
+  color: var(--green) !important;
+  background: var(--green-bg) !important;
+  transition: none !important;
 }
 
-.playback-tuning-shift-btn:hover {
-  color: #80c8e8;
-  border-color: #2a6a88;
-  background: #0d2030;
-}
-
+/* Tuning selects — in the playback bar */
 .tuning-select {
-  width: 50px;
+  width: 48px;
   background: transparent;
   border: none;
   color: var(--text-1);
   font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
   outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: center;
+}
+.tuning-select option { background: var(--surface-2); color: var(--text-1); }
+
+/* ── Fretboard area ─────────────────────────────────────────────── */
+.fretboard-area {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 24px 0;
 }
 
-.tuning-select option {
-  background: #1c2533;
-  color: var(--text-1);
-}
-
-/* ── Mobile layout ───────────────────────────────────────────────────────── */
-@media (max-width: 600px) {
-  :root {
-    --nav-h:    48px;
-  }
-
-  /* ── Nav ── */
-  .app-nav {
-    padding: 0 10px;
-  }
-
-  .nav-brand {
-    gap: 4px;
-    flex-shrink: 0;
-  }
-
-  .nav-icon {
-    font-size: 20px;
-  }
-
-  /* Hide the brand text — keeps icon only, frees ~70px for controls */
-  .nav-title {
-    display: none;
-  }
-
-  /* Let the controls row scroll horizontally so all four groups are reachable */
-  .nav-controls {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;           /* Firefox */
-  }
-  .nav-controls::-webkit-scrollbar {
-    display: none;                   /* Chrome / Safari */
-  }
-
-  .nav-control-group {
-    padding: 0 8px;
-    flex-shrink: 0;
-  }
-
-  .nav-label {
-    font-size: 8px;
-  }
-
-  .app-nav select {
-    font-size: 11px;
-    min-width: 46px;
-  }
-
-  .tuning-select {
-    width: 40px;
-    font-size: 11px;
-  }
-
-  /* ── Fretboard area ──
-     Horizontal-only scroll container. The fretboard is ~1020px wide on mobile
-     (22 frets × 44px + open + nut) so the user drags left/right to see more.
-     touch-action: pan-x  → browser handles horizontal swipes natively,
-                             vertical swipes pass through to page scroll,
-                             taps still fire click events on note dots. */
-  .fretboard-area {
-    justify-content: flex-start;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding: 4px 0 0;
-    /* pan-x + pan-y: horizontal scroll works within the area, vertical
-       pan has no scrollable content here so it propagates to the page. */
-    touch-action: pan-x pan-y;
-    /* Stop "bounce to go back" gesture from firing at scroll edges */
-    overscroll-behavior-x: contain;
-  }
-}
-
-/* ── Nav button ──────────────────────────────────────────────────────────── */
-.button {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text-2);
-  font-size: 12px;
-  font-weight: 500;
-  padding: 5px 12px;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-  white-space: nowrap;
-}
-
-.button:hover {
-  border-color: #38485a;
-  color: var(--text-1);
-}
-
-.button.active {
-  border-color: #b89a2a;
-  color: #fde047;
-  background: rgba(253, 224, 71, 0.08);
-}
-
-/* Metronome running — dim green resting state */
-.button--metro-on {
-  border-color: #2a6a1a;
-  color: #6a9a3a;
-}
-
-/* Beat flash — instant on, fades out via the existing .button transition */
-.button--beat {
-  border-color: #adff2f !important;
-  color: #adff2f !important;
-  background: rgba(173, 255, 47, 0.12) !important;
-  transition: none !important;
-}
-
-/* ── Print-only title (hidden on screen) ─────────────────────────────────── */
-.print-title {
-  display: none;
-}
-
-/* ── Shared playback controls ────────────────────────────────────────────── */
+/* ── Playback bar ───────────────────────────────────────────────── */
 .playback-bar {
-  background: #0a1520;
-  border-top: 2px solid #1e3a48;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
 }
-
 .playback-bar-body {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  padding: 10px 14px 12px;
+  padding: var(--section-py) var(--section-px) 14px;
   gap: 0;
 }
 
-/* Left column: title + BPM/note + time-sig */
+/* Left: BPM / note / time-sig */
 .playback-time-col {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
   min-width: 0;
 }
-
 .playback-bar-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.playback-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.playback-label {
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #5a8898;
-}
-
-/* BPM + note length on a single row */
-.playback-controls-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.playback-label {
-  font-size: 9px;
-  font-weight: 700;
-  color: #5a8898;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  color: var(--text-3);
   flex-shrink: 0;
 }
-
 .playback-bpm-group {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
-
 .playback-bpm-slider {
   -webkit-appearance: none;
   appearance: none;
-  width: 90px;
+  width: 96px;
   height: 4px;
   border-radius: 2px;
-  background: #1e3a48;
+  background: var(--surface-2);
   outline: none;
   cursor: pointer;
 }
-
 .playback-bpm-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
-  background: #38bdf8;
-  border: 2px solid #0a1a28;
+  background: var(--blue);
+  border: 2px solid var(--bg);
   cursor: pointer;
+  box-shadow: 0 0 5px var(--blue-glow);
 }
-
 .playback-bpm-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
-  background: #38bdf8;
-  border: 2px solid #0a1a28;
+  background: var(--blue);
+  border: 2px solid var(--bg);
   cursor: pointer;
 }
-
 .playback-bpm-value {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  color: #80c8e8;
-  min-width: 26px;
+  color: var(--blue);
+  min-width: 28px;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
-
 .playback-note-length-group {
   display: flex;
   align-items: center;
   gap: 3px;
 }
-
 .playback-nl-btn {
   background: none;
-  border: 1px solid #243e4e;
-  border-radius: 5px;
-  color: #5a8898;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 3px 8px;
   cursor: pointer;
-  transition: color 0.12s, border-color 0.12s, background 0.12s;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
   white-space: nowrap;
 }
-
-.playback-nl-btn:hover          { color: #a0c8d8; border-color: #3a6a80; }
-.playback-nl-btn--active        { background: #1a4a60; border-color: #38bdf8; color: #80c8e8; }
+.playback-nl-btn:hover          { background: var(--surface-2); color: var(--text-1); }
+.playback-nl-btn--active        { background: var(--blue-bg); border-color: var(--blue-border); color: var(--blue); }
 
 .playback-timesig-area {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   align-items: flex-start;
 }
-
-.playback-ts-group {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
+.playback-ts-group      { display: flex; flex-direction: column; gap: 4px; }
 .playback-ts-category {
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #3a5a6e;
+  color: var(--text-3);
 }
-
-.playback-ts-btns {
-  display: flex;
-  gap: 3px;
-}
-
+.playback-ts-btns       { display: flex; gap: 3px; }
 .playback-ts-btn {
   background: none;
-  border: 1px solid #1e3a4a;
-  border-radius: 5px;
-  color: #4a7080;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 3px 7px;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.12s, border-color 0.12s, background 0.12s;
-  min-width: 28px;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  min-width: 30px;
   text-align: center;
+  font-variant-numeric: tabular-nums;
 }
+.playback-ts-btn:hover   { background: var(--surface-2); color: var(--text-1); }
+.playback-ts-btn--active { background: var(--blue-bg); border-color: var(--blue-border); color: var(--blue); }
 
-.playback-ts-btn:hover    { color: #90b8c8; border-color: #2a5a70; }
-.playback-ts-btn--active  { background: #123040; border-color: #38bdf8; color: #70c8e8; }
-
-/* Right column: tuning — separated by a vertical divider */
+/* Right: tuning */
 .playback-tuning-col {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   padding-left: 16px;
   margin-left: 16px;
-  border-left: 1px solid #1e3a48;
+  border-left: 1px solid var(--border-muted);
   flex-shrink: 0;
 }
-
 .playback-tuning-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex-wrap: wrap;
 }
-
-@media (max-width: 600px) {
-  .playback-bar-body {
-    flex-direction: column;
-    padding: 8px 10px 10px;
-    gap: 10px;
-  }
-  .playback-tuning-col {
-    border-left: none;
-    border-top: 1px solid #1e3a48;
-    padding-left: 0;
-    margin-left: 0;
-    padding-top: 8px;
-  }
-  .playback-bpm-slider { width: 80px; }
-  .playback-ts-btn     { padding: 2px 4px; font-size: 10px; min-width: 26px; }
+.playback-tuning-shift-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 8px;
+  cursor: pointer;
+  line-height: 1;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
+.playback-tuning-shift-btn:hover { background: var(--surface-2); border-color: var(--surface-3); color: var(--text-1); }
 
-/* ── Slide-out Tools Panel ───────────────────────────────────────────────── */
+/* ── Slide-out Tools Panel ──────────────────────────────────────── */
 .tools-panel-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.60);
   z-index: 10000;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s;
+  transition: opacity 0.22s;
 }
-
-.tools-panel-overlay--open {
-  opacity: 1;
-  pointer-events: auto;
-}
+.tools-panel-overlay--open { opacity: 1; pointer-events: auto; }
 
 .tools-panel {
   position: fixed;
   top: var(--nav-h);
   right: 0;
   bottom: 0;
-  width: 380px;
+  width: 360px;
   max-width: 100vw;
-  background: var(--bg-panel);
+  background: var(--surface);
   border-left: 1px solid var(--border);
   z-index: 10001;
   overflow-y: auto;
   transform: translateX(100%);
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
 }
-
-.tools-panel--open {
-  transform: translateX(0);
-}
+.tools-panel--open { transform: translateX(0); }
 
 .tools-panel-header {
   display: flex;
@@ -536,32 +376,27 @@
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-
 .tools-panel-title {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-2);
+  color: var(--text-3);
 }
-
 .tools-panel-close {
   background: none;
   border: none;
-  color: var(--text-2);
+  color: var(--text-3);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
   padding: 4px 6px;
-  border-radius: 4px;
-  transition: color 0.15s;
+  border-radius: var(--r);
+  transition: color 0.15s, background 0.15s;
+  font-family: inherit;
 }
+.tools-panel-close:hover { color: var(--text-1); background: var(--surface-2); }
 
-.tools-panel-close:hover {
-  color: var(--text-1);
-}
-
-/* Suppress top border on the first component inside the panel */
 .tools-panel .metronome-section,
 .tools-panel .tuner-section {
   border-top: none;
@@ -569,140 +404,95 @@
   flex: unset;
 }
 
+/* ── Print-only title ───────────────────────────────────────────── */
+.print-title { display: none; }
+
+/* ── Mobile ─────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
+  :root { --nav-h: 48px; }
+
+  .app-nav  { padding: 0 10px; }
+  .nav-title { display: none; }
+  .nav-icon  { font-size: 20px; }
+  .nav-control-group { padding: 0 8px; }
+  .nav-label { font-size: 8px; }
+  .app-nav select { font-size: 11px; min-width: 48px; }
+  .tuning-select  { width: 38px; font-size: 11px; }
+
+  .fretboard-area {
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 0 0;
+    touch-action: pan-x pan-y;
+    overscroll-behavior-x: contain;
+  }
+
+  .playback-bar-body {
+    flex-direction: column;
+    padding: 10px var(--section-px) 12px;
+    gap: 12px;
+  }
+  .playback-tuning-col {
+    border-left: none;
+    border-top: 1px solid var(--border-muted);
+    padding-left: 0;
+    margin-left: 0;
+    padding-top: 10px;
+  }
+  .playback-bpm-slider { width: 80px; }
+  .playback-ts-btn { padding: 3px 5px; min-width: 26px; font-size: 10px; }
+
   .tools-panel {
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 72vh;
+    top: auto; left: 0; right: 0; bottom: 0;
+    width: 100%; height: 72vh;
     border-left: none;
     border-top: 1px solid var(--border);
     transform: translateY(100%);
-    border-radius: 14px 14px 0 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
   }
-
-  .tools-panel--open {
-    transform: translateY(0);
-  }
+  .tools-panel--open { transform: translateY(0); }
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    Print / PDF export
-   Chrome: File → Print → "Save as PDF"  (landscape recommended)
-   ══════════════════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════ */
 @media print {
-  /* Force background colours / images to render */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-  @page {
-    size: landscape;
-    margin: 10mm 8mm;
-  }
+  @page { size: landscape; margin: 10mm 8mm; }
 
-  /* ── Layout reset ── */
-  .App {
-    padding-top: 0;
-    overflow: visible;
-    min-height: unset;
-  }
+  .App { padding-top: 0; overflow: visible; min-height: unset; }
 
-  /* ── Print title ── */
   .print-title {
     display: flex;
     flex-direction: column;
     gap: 2px;
     padding: 6px 0 10px;
-    border-bottom: 1px solid #2a4050;
+    border-bottom: 1px solid var(--border);
     margin-bottom: 10px;
   }
-
   .print-title-key {
     font-size: 18px;
     font-weight: 800;
-    color: #adff2f;
+    color: var(--green);
     letter-spacing: -0.01em;
   }
+  .print-title-tuning { font-size: 10px; color: var(--text-3); letter-spacing: 0.05em; }
 
-  .print-title-tuning {
-    font-size: 10px;
-    color: #5a8898;
-    letter-spacing: 0.05em;
-  }
+  .app-nav             { display: none; }
+  .tools-row, .playback-bar, .fb-scale-ctrl { display: none; }
 
-  /* ── Nav: hide interactive chrome, keep brand for identification ── */
-  .app-nav {
-    position: static;
-    border-bottom: none;
-    padding: 0;
-    height: auto;
-    display: none;           /* hide entirely — print-title replaces it */
-  }
+  .fretboard-area { overflow: visible; padding: 0 0 8px; justify-content: flex-start; }
+  .fretboard      { zoom: 0.85; }
 
-  .tools-row,
-  .playback-bar,
-  .fb-scale-ctrl {
-    display: none;
-  }
+  .fb-pattern-overlay, .fb-pattern-legend { display: none !important; }
 
-  /* ── Fretboard ── */
-  .fretboard-area {
-    overflow: visible;
-    padding: 0 0 8px;
-    justify-content: flex-start;
-  }
+  .prog-play-btn, .prog-nav-btn, .prog-dots { display: none; }
+  .prog-card-chords { overflow: visible; flex-wrap: wrap; gap: 6px; }
 
-  /* Scale fretboard to fit landscape page width (~1080px content at 96dpi).
-     22 frets × 52px + open + nut ≈ 1210px → zoom 0.85 ≈ 1028px            */
-  .fretboard {
-    zoom: 0.85;
-  }
-
-  /* Hide the SVG pattern overlay (JS-computed dimensions don't match print
-     zoom; the highlighted note dots convey the same info more cleanly)     */
-  .fb-pattern-overlay,
-  .fb-pattern-legend {
-    display: none !important;
-  }
-
-  /* ── Chord progression ── */
-  .prog-play-btn,
-  .prog-nav-btn,
-  .prog-dots {
-    display: none;
-  }
-
-  .prog-card-chords {
-    overflow: visible;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  /* ── Chord section ── */
-  .chord-tabs {
-    display: none;
-  }
-
-  .chord-scroll-row {
-    overflow: visible;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  /* Avoid page breaks inside a chord diagram */
-  .chord-slot,
-  .chord-diagram {
-    break-inside: avoid;
-  }
-
-  /* Keep sections together if possible */
-  .progression-section,
-  .chord-section {
-    break-inside: avoid;
-    margin-top: 8px;
-  }
+  .chord-tabs { display: none; }
+  .chord-scroll-row { overflow: visible; flex-wrap: wrap; gap: 6px; }
+  .chord-slot, .chord-diagram { break-inside: avoid; }
+  .progression-section, .chord-section { break-inside: avoid; margin-top: 8px; }
 }

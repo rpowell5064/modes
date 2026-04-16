@@ -1,4 +1,4 @@
-/* ── Default: invisible — string shows through ───────────────────────────── */
+/* ── Default: invisible — string shows through ───────────────── */
 .note {
   height: 42px;
   width: 42px;
@@ -11,6 +11,7 @@
   justify-content: center;
   font-size: 10px;
   font-weight: 800;
+  font-family: inherit;
   letter-spacing: -0.03em;
   color: transparent;
   cursor: pointer;
@@ -23,57 +24,43 @@
 
 /* Ghost hint on hover */
 .note:hover {
-  opacity: 0.35;
-  border-color: rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.4);
+  opacity: 0.30;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.35);
 }
 
-/* ── Scale note: outlined ring ───────────────────────────────────────────── */
+/* ── Scale note: green ring ──────────────────────────────────── */
 .note.marked {
   opacity: 1;
-  background: rgba(74, 222, 128, 0.1);
-  border-color: #4ade80;
+  background: var(--green-bg);
+  border-color: var(--green);
   border-width: 2px;
-  box-shadow:
-    0 0 12px rgba(74, 222, 128, 0.3),
-    0 2px 6px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 10px var(--green-glow), 0 2px 6px rgba(0, 0, 0, 0.5);
   color: #86efac;
 }
 
-
-/* ── Root / tonic: solid filled circle ───────────────────────────────────── */
+/* ── Root / tonic: solid red ─────────────────────────────────── */
 .note.octave {
   opacity: 1;
   background: #dc2626;
-  border-color: #f87171;
+  border-color: var(--red);
   border-width: 2px;
-  box-shadow:
-    0 0 12px rgba(220, 38, 38, 0.4),
-    0 2px 6px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 12px rgba(220, 38, 38, 0.45), 0 2px 6px rgba(0, 0, 0, 0.5);
   color: #fff;
 }
 
 /* Click feedback */
-.note:active {
-  transform: scale(0.82);
-}
+.note:active { transform: scale(0.82); }
 
-/* ── Actively playing note (scale playback) ──────────────────────────────── */
+/* ── Actively playing note ───────────────────────────────────── */
 .note.playing {
   opacity: 1;
-  background: #38bdf8;
-  border-color: #60d0ff;
-  color: #0a1a28;
-  box-shadow:
-    0 0 14px rgba(56, 189, 248, 0.8),
-    0 2px 8px rgba(0, 0, 0, 0.5);
+  background: var(--blue);
+  border-color: #63cfff;
+  color: var(--bg);
+  box-shadow: 0 0 14px var(--blue-glow), 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-/* ── Mobile: shrink dots to fit smaller fret cells ───────────────────────── */
 @media (max-width: 600px) {
-  .note {
-    height: 34px;
-    width:  34px;
-    font-size: 9px;
-  }
+  .note { height: 34px; width: 34px; font-size: 9px; }
 }

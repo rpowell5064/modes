@@ -1,14 +1,168 @@
+/* ═══════════════════════════════════════════════════════════════
+   Design System — tokens shared across all components
+   ═══════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* ── Surfaces ───────────────────────────────── */
+  --bg:           #0d1117;
+  --surface:      #161b22;
+  --surface-2:    #21262d;
+  --surface-3:    #2d333b;
+
+  /* ── Borders ────────────────────────────────── */
+  --border:       #30363d;
+  --border-muted: #21262d;
+
+  /* ── Text ───────────────────────────────────── */
+  --text-1:       #e6edf3;
+  --text-2:       #8b949e;
+  --text-3:       #6e7681;
+
+  /* ── Brand: interactive / playback (sky blue) ── */
+  --blue:         #38bdf8;
+  --blue-bg:      rgba(56, 189, 248, 0.10);
+  --blue-border:  rgba(56, 189, 248, 0.30);
+  --blue-glow:    rgba(56, 189, 248, 0.50);
+
+  /* ── Green: scale notes, success ─────────────── */
+  --green:        #4ade80;
+  --green-dim:    #2d6a46;
+  --green-bg:     rgba(74, 222, 128, 0.10);
+  --green-border: rgba(74, 222, 128, 0.28);
+  --green-glow:   rgba(74, 222, 128, 0.45);
+
+  /* ── Red: root / tonic ───────────────────────── */
+  --red:          #f87171;
+  --red-bg:       rgba(248, 113, 113, 0.12);
+  --red-border:   rgba(248, 113, 113, 0.30);
+
+  /* ── Yellow: accent / warnings ──────────────── */
+  --yellow:       #facc15;
+  --yellow-bg:    rgba(250, 204, 21, 0.10);
+
+  /* ── Layout ──────────────────────────────────── */
+  --nav-h:        52px;
+  --r:            6px;
+  --r-lg:         10px;
+  --r-xl:         14px;
+  --section-px:   16px;
+  --section-py:   12px;
+}
+
+/* ── Base reset ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  font-family: 'helvetica';
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+               system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-1);
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Hide scrollbars globally ────────────────────────────────────────────── */
-* {
-  scrollbar-width: none;
+/* ── Global scrollbar hiding ────────────────────────────────────── */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }
+
+/* ── Shared section-header label ────────────────────────────────── */
+/* Use .section-label on any small all-caps title within sections   */
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  user-select: none;
 }
-*::-webkit-scrollbar {
-  display: none;
+
+/* ── Shared button primitives ───────────────────────────────────── */
+/* Ghost button — default for all secondary controls                */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s, box-shadow 0.12s;
+  line-height: 1;
+  user-select: none;
 }
+.btn:hover  { background: var(--surface-2); border-color: var(--surface-3); color: var(--text-1); }
+.btn:active { transform: scale(0.96); }
+
+/* Active / selected state */
+.btn--active {
+  background: var(--blue-bg);
+  border-color: var(--blue-border);
+  color: var(--blue);
+}
+.btn--active:hover {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: var(--blue);
+}
+
+/* Green CTA (apply, confirm) */
+.btn--primary {
+  background: var(--green-bg);
+  border-color: var(--green-border);
+  color: var(--green);
+}
+.btn--primary:hover {
+  background: rgba(74, 222, 128, 0.18);
+  border-color: var(--green);
+}
+
+/* Danger */
+.btn--danger {
+  background: var(--red-bg);
+  border-color: var(--red-border);
+  color: var(--red);
+}
+.btn--danger:hover { background: rgba(248, 113, 113, 0.18); }
+
+/* Round icon button (play/stop circles) */
+.btn-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, color 0.15s;
+  font-family: inherit;
+}
+.btn-circle:hover { background: var(--surface-3); border-color: var(--blue-border); color: var(--text-1); }
+.btn-circle--playing {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--bg);
+  box-shadow: 0 0 12px var(--blue-glow);
+}
+.btn-circle--playing:hover {
+  background: #63cfff;
+  box-shadow: 0 0 16px var(--blue-glow);
+}
+.btn-circle:disabled { opacity: 0.35; cursor: not-allowed; }

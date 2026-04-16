@@ -1,78 +1,59 @@
-/* ── Horizontal chord strip below the fretboard ─────────────────────────── */
+/* ── Chord Section ───────────────────────────────────────────── */
 .chord-section {
-    width: 100%;
-    background: #0f1e26;
-    border-top: 2px solid #1e3a48;
-    padding: 10px 16px 14px;
-    box-sizing: border-box;
+  width: 100%;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: var(--section-py) var(--section-px) 16px;
+  box-sizing: border-box;
 }
 
-/* ── Top bar: key/scale label + tab buttons ──────────────────────────────── */
+/* ── Header ─────────────────────────────────────────────────── */
 .chord-section-top {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 10px;
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
-
 .chord-section-label {
-    color: #6a9aaa;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
 }
 
-/* ── Tab row ─────────────────────────────────────────────────────────────── */
+/* ── Tab row ────────────────────────────────────────────────── */
 .chord-tabs {
-    display: flex;
-    gap: 5px;
+  display: flex;
+  gap: 4px;
 }
-
 .chord-tab {
-    background: #1c3540;
-    border: 1px solid #2a4d5a;
-    border-radius: 5px;
-    color: #5a8898;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 5px 12px;
-    cursor: pointer;
-    transition: background 0.13s, color 0.13s, border-color 0.13s;
-    white-space: nowrap;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
 }
-
-.chord-tab:hover {
-    background: #243e4e;
-    color: #80aabb;
-}
-
+.chord-tab:hover { background: var(--surface-3); color: var(--text-1); }
 .chord-tab.active {
-    background: #1e5570;
-    border-color: #3a8aaa;
-    color: #c0e8f8;
+  background: var(--blue-bg);
+  border-color: var(--blue-border);
+  color: var(--blue);
 }
 
-/* ── Horizontally scrolling chord row ────────────────────────────────────── */
+/* ── Scrolling chord row ────────────────────────────────────── */
 .chord-scroll-row {
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 6px;
-    scrollbar-width: thin;
-    scrollbar-color: #2e5060 #0f1e26;
-}
-
-.chord-scroll-row::-webkit-scrollbar {
-    height: 5px;
-}
-.chord-scroll-row::-webkit-scrollbar-track {
-    background: #0f1e26;
-}
-.chord-scroll-row::-webkit-scrollbar-thumb {
-    background: #2e5060;
-    border-radius: 3px;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
 }
