@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(npx tsc:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(npx react-scripts:*)",
+      "Bash(set NODE_OPTIONS=--openssl-legacy-provider)",
+      "Bash(NODE_OPTIONS=--openssl-legacy-provider npx react-scripts build)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(npx.cmd tsc:*)",
+      "Bash(npm install:*)",
+      "Bash(SET NODE_OPTIONS=--openssl-legacy-provider)",
+      "Bash(NODE_OPTIONS=--openssl-legacy-provider npx tsc:*)",
+      "Bash(NODE_OPTIONS=--openssl-legacy-provider npm start)"
+    ]
+  }
+}
