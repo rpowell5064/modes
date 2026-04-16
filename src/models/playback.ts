@@ -1,21 +1,46 @@
 /* ── Shared playback types and constants ─────────────────────────────────── */
 
-export type NoteLength = 'sixteenth' | 'eighth' | 'quarter' | 'half' | 'whole';
+export type NoteLength =
+    | 'thirtysecond'
+    | 'sixteenth'
+    | 'eighth'
+    | 'quarter'
+    | 'half'
+    | 'whole'
+    | 'sixteenth-triplet'
+    | 'eighth-triplet'
+    | 'quarter-triplet'
+    | 'sextuplet';
 
-export const NOTE_LENGTH_BEATS: Record<Exclude<NoteLength, 'whole'>, number> = {
-    sixteenth: 0.25,
-    eighth:    0.50,
-    quarter:   1.00,
-    half:      2.00,
+export const NOTE_LENGTH_BEATS: Record<NoteLength, number> = {
+    thirtysecond:        0.125,
+    sixteenth:           0.25,
+    eighth:              0.50,
+    quarter:             1.00,
+    half:                2.00,
+    whole:               4.00,
+    'sixteenth-triplet': 1 / 6,
+    'eighth-triplet':    1 / 3,
+    'quarter-triplet':   2 / 3,
+    sextuplet:           1 / 6,
 };
 
-export const NOTE_LENGTH_OPTIONS: NoteLength[] = ['sixteenth', 'eighth', 'quarter', 'half', 'whole'];
+export const NOTE_LENGTH_OPTIONS: NoteLength[] = [
+    'thirtysecond', 'sixteenth', 'eighth', 'quarter', 'half', 'whole',
+    'sixteenth-triplet', 'eighth-triplet', 'quarter-triplet', 'sextuplet',
+];
+
 export const NOTE_LENGTH_LABEL: Record<NoteLength, string> = {
-    sixteenth: '1/16',
-    eighth:    '1/8',
-    quarter:   '1/4',
-    half:      '1/2',
-    whole:     '1/1',
+    thirtysecond:        '1/32',
+    sixteenth:           '1/16',
+    eighth:              '1/8',
+    quarter:             '1/4',
+    half:                '1/2',
+    whole:               '1/1',
+    'sixteenth-triplet': '1/16t',
+    'eighth-triplet':    '1/8t',
+    'quarter-triplet':   '1/4t',
+    sextuplet:           '1/6',
 };
 
 export interface TimeSig {

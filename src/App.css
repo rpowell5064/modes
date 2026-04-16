@@ -65,6 +65,34 @@
   letter-spacing: -0.01em;
 }
 
+/* ── Page switcher tabs ──────────────────────────────────────────────────── */
+.nav-pages {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  margin: 0 8px;
+}
+
+.nav-page-btn {
+  padding: 0 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.nav-page-btn:hover { color: var(--text-1); }
+
+.nav-page-btn--active {
+  color: var(--accent-b);
+  border-bottom-color: var(--accent-b);
+}
+
 .nav-controls {
   display: flex;
   align-items: stretch;

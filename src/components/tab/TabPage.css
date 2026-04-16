@@ -1,0 +1,686 @@
+/* ── TabPage layout ─────────────────────────────────────────────────────── */
+
+.tab-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--nav-h));
+  overflow: hidden;
+  background: var(--bg-base);
+  color: var(--text-1);
+}
+
+/* ── Toolbar (dark UI theme) ────────────────────────────────────────────── */
+
+.tab-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 6px 12px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tab-tb-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 12px 2px 0;
+  margin-right: 12px;
+  border-right: 1px solid var(--border);
+}
+
+.tab-tb-group:last-child {
+  border-right: none;
+  margin-right: 0;
+}
+
+.tab-tb-group--note { align-items: flex-start; }
+
+.tab-tb-label {
+  color: var(--text-2);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.tab-bpm-slider {
+  width: 80px;
+  accent-color: var(--accent-b);
+  cursor: pointer;
+}
+
+.tab-bpm-val {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 26px;
+  text-align: right;
+  color: var(--text-1);
+}
+
+/* Note-length button rows */
+.tab-nl-rows { display: flex; flex-direction: column; gap: 3px; }
+.tab-nl-row  { display: flex; gap: 2px; }
+.tab-nl-row--tuplet { border-top: 1px dashed var(--border); padding-top: 3px; }
+
+.tab-nl-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px 5px 4px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  min-width: 32px;
+  gap: 1px;
+}
+.tab-nl-btn:hover       { background: var(--bg-card); color: var(--text-1); }
+.tab-nl-btn--active     { background: var(--accent-b); color: #000; border-color: var(--accent-b); }
+.tab-nl-btn--active .note-sym { color: #000; }
+
+.tab-nl-lbl {
+  font-size: 9px; font-weight: 600; line-height: 1; white-space: nowrap;
+}
+
+.tab-btn {
+  padding: 4px 10px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-1);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+.tab-btn:hover    { background: var(--bg-card); }
+.tab-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.tab-btn--play  { color: var(--accent-g); border-color: var(--accent-g); }
+.tab-btn--play:hover  { background: rgba(74, 222, 128, 0.1); }
+.tab-btn--stop  { color: var(--accent-r); border-color: var(--accent-r); }
+.tab-btn--stop:hover  { background: rgba(248, 113, 113, 0.1); }
+.tab-btn--danger { color: var(--accent-r); border-color: transparent; }
+.tab-btn--danger:hover { background: rgba(248, 113, 113, 0.1); border-color: var(--accent-r); }
+.tab-btn--rest-active  { color: #f59e0b; border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+.tab-btn--loop-active  { color: var(--accent-b); border-color: var(--accent-b); background: rgba(56, 189, 248, 0.1); }
+
+/* ── Fretboard Input ─────────────────────────────────────────────────────── */
+
+.tab-fb-section {
+  flex-shrink: 0;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 0 8px;
+}
+
+.tab-fb-hint {
+  font-size: 11px; color: var(--text-2);
+  padding: 0 16px 4px; height: 18px;
+}
+.tab-fb-hint--error { color: #e05555; }
+
+.tab-fb-grid { overflow-x: auto; padding: 0 16px; -webkit-overflow-scrolling: touch; }
+
+.tab-fb-row         { display: flex; align-items: stretch; gap: 2px; margin-bottom: 2px; }
+.tab-fb-row--header { margin-bottom: 4px; }
+.tab-fb-row--rest .tab-fb-cell { opacity: 0.35; pointer-events: none; }
+
+.tab-fb-label-cell {
+  width: 36px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--text-2);
+}
+
+.tab-fb-fret-label {
+  width: 34px; flex-shrink: 0;
+  text-align: center; font-size: 10px; color: var(--text-2); line-height: 1;
+}
+.tab-fb-fret-label--mute { color: #6b7280; font-size: 11px; }
+
+.tab-fb-cell {
+  width: 34px; height: 30px; flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: 3px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--text-2);
+  transition: background 0.08s, border-color 0.08s, color 0.08s;
+  user-select: none;
+}
+.tab-fb-cell:hover         { background: var(--bg-card); border-color: #3a3a4a; color: var(--text-1); }
+.tab-fb-cell--mute-toggle  { border-style: dashed; }
+.tab-fb-cell--active       { background: var(--accent-b); border-color: var(--accent-b); color: #000; }
+.tab-fb-cell--active:hover { background: #60ccf8; border-color: #60ccf8; }
+.tab-fb-cell--bent         { background: #f59e0b; border-color: #f59e0b; color: #000; }
+.tab-fb-cell--bent:hover   { background: #fbbf24; border-color: #fbbf24; }
+.tab-fb-cell--muted        { background: #4b5563; border-color: #6b7280; color: #d1d5db; }
+.tab-fb-cell--muted:hover  { background: #6b7280; }
+.tab-fb-cell--playing      { background: var(--accent-g); border-color: var(--accent-g); color: #000; }
+
+/* ── Note properties panel ───────────────────────────────────────────────── */
+
+.tab-note-props {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 10px; padding: 6px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-base);
+}
+.tab-note-props-title {
+  font-size: 10px; color: var(--text-2);
+  text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0;
+}
+.tab-note-prop-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 5px; padding: 3px 8px;
+}
+.tab-note-prop-name  { font-size: 11px; color: var(--text-1); white-space: nowrap; }
+.tab-note-prop-bend  { display: flex; align-items: center; gap: 3px; }
+.tab-note-prop-lbl   { font-size: 10px; color: var(--text-2); margin-right: 2px; }
+
+.tab-bend-btn {
+  padding: 2px 6px; background: none;
+  border: 1px solid var(--border); border-radius: 3px;
+  color: var(--text-2); font-size: 11px; cursor: pointer;
+  min-width: 24px; text-align: center;
+  transition: background 0.08s, color 0.08s, border-color 0.08s;
+}
+.tab-bend-btn:hover    { background: var(--bg-panel); color: var(--text-1); }
+.tab-bend-btn--active  { background: #f59e0b; border-color: #f59e0b; color: #000; }
+/* Articulation buttons use a different active color */
+.tab-bend-btn--art.tab-bend-btn--active  { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+/* FX buttons: palm mute, vibrato, harmonic */
+.tab-bend-btn--pm.tab-bend-btn--active   { background: #0369a1; border-color: #0369a1; color: #fff; }
+.tab-bend-btn--vib.tab-bend-btn--active  { background: #059669; border-color: #059669; color: #fff; }
+.tab-bend-btn--harm.tab-bend-btn--active { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TAB NOTATION EDITOR — white sheet-music background
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tab-editor-wrap {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  background: #fff;
+}
+
+/* Wrapping bar area */
+.tab-bars-area {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  padding: 16px 20px 24px;
+  gap: 0;
+  background: #fff;
+}
+
+/* ── Individual bar ───────────────────────────────────────────────────────── */
+
+.tab-bar { flex-shrink: 0; }
+
+/* Bar header row: bar number, beat counter, time sig */
+.tab-bar-header {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 4px 0 2px;
+}
+
+.tab-bar-num {
+  font-size: 9px;
+  font-family: 'Arial', sans-serif;
+  color: #aaa;
+  white-space: nowrap;
+}
+.tab-bar--active .tab-bar-num { color: #2563eb; }
+
+/* Beat counter */
+.tab-bar-beats {
+  font-size: 8px;
+  color: #bbb;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex: 1;
+  text-align: center;
+}
+.tab-bar-beats--full { color: #16a34a; font-weight: 700; }
+.tab-bar-beats--over { color: #dc2626; font-weight: 700; }
+
+/* Time-sig toggle */
+.tab-ts-wrapper { position: relative; }
+
+.tab-ts-toggle {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  color: #555;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, border-color 0.1s;
+}
+.tab-ts-toggle:hover { background: #f5f5f5; }
+.tab-bar--active .tab-ts-toggle { border-color: #2563eb; color: #2563eb; }
+
+.tab-ts-popup {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px;
+  z-index: 200;
+  min-width: 170px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+.tab-ts-group        { margin-bottom: 8px; }
+.tab-ts-group:last-of-type { margin-bottom: 0; }
+.tab-ts-group-lbl    { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+.tab-ts-group-row    { display: flex; flex-wrap: wrap; gap: 3px; }
+.tab-ts-sig          { background: none; border: 1px solid #ddd; border-radius: 3px; color: #333; font-size: 11px; padding: 2px 6px; cursor: pointer; transition: background 0.08s; }
+.tab-ts-sig:hover    { background: #f5f5f5; }
+.tab-ts-sig--active  { background: #2563eb; color: #fff; border-color: #2563eb; }
+.tab-ts-del {
+  display: block; width: 100%; margin-top: 10px; padding: 5px;
+  background: none; border: 1px solid #dc2626; border-radius: 3px;
+  color: #dc2626; font-size: 11px; cursor: pointer; transition: background 0.1s;
+}
+.tab-ts-del:hover { background: rgba(220, 38, 38, 0.08); }
+
+/* ── Bar inner: string labels + columns ──────────────────────────────────── */
+
+.tab-bar-inner {
+  display: flex;
+  align-items: stretch;
+}
+
+/* String-name / TAB-clef labels on the left of each bar */
+.tab-bar-labels {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 28px;
+  border-right: 1px solid #ccc;
+}
+
+.tab-bar-lbl-spacer {
+  height: 46px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.tab-bar-lbl-cell {
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+  color: #777;
+  font-family: 'Arial', sans-serif;
+}
+
+/* TAB clef (bar 0 only) */
+.tab-bar-clef {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  font-family: 'Times New Roman', 'Georgia', serif;
+  font-weight: 900;
+  font-size: 16px;
+  color: #1a1a1a;
+  padding: 0 2px;
+}
+
+/* ── Bar body ─────────────────────────────────────────────────────────────── */
+
+.tab-bar-body {
+  display: flex;
+  align-items: stretch;
+  /* Double bar-line at right edge of each bar */
+  border-right: 2px solid #333;
+  padding-right: 0;
+  margin-right: 0;
+}
+
+/* ── Individual column ────────────────────────────────────────────────────── */
+
+.tab-col {
+  cursor: pointer;
+  min-width: 40px;
+  /* Subtle column separator */
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  transition: background 0.06s;
+  user-select: none;
+  position: relative;
+}
+
+.tab-col:hover { background: rgba(0, 0, 0, 0.025); }
+
+/* Selected column: light blue wash */
+.tab-col--selected { background: rgba(219, 234, 254, 0.55); }
+.tab-col--selected:hover { background: rgba(219, 234, 254, 0.75); }
+
+/* Playing column: light green wash */
+.tab-col--playing { background: rgba(220, 252, 231, 0.6); }
+
+/* Rest column: light amber wash */
+.tab-col--rest { background: rgba(254, 243, 199, 0.5); }
+.tab-col--rest:hover { background: rgba(254, 243, 199, 0.8); }
+.tab-col--rest.tab-col--selected { background: rgba(254, 243, 199, 0.9); }
+
+/* ── Note-length symbol + label (column header) ───────────────────────────── */
+
+.tab-col-len {
+  height: 46px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 3px 0 2px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.note-sym {
+  display: block;
+  flex-shrink: 0;
+  color: #444;
+}
+.tab-col--selected .note-sym { color: #1d4ed8; }
+.tab-col--playing  .note-sym { color: #166534; }
+
+.tab-col-len-lbl {
+  font-size: 7px;
+  font-weight: 700;
+  color: #999;
+  line-height: 1;
+  white-space: nowrap;
+  font-family: 'Arial', sans-serif;
+}
+.tab-col--selected .tab-col-len-lbl { color: #1d4ed8; }
+.tab-col--playing  .tab-col-len-lbl { color: #166534; }
+
+/* ── String cell ──────────────────────────────────────────────────────────── */
+
+.tab-col-cell {
+  position: relative;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Horizontal string line — thin, medium-gray, like printed tab */
+.tab-col-cell::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 1px;
+  background: #bbb;
+}
+
+/* ── Fret number ──────────────────────────────────────────────────────────── */
+
+.tab-col-num {
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-weight: 700;
+  min-width: 20px;
+  text-align: center;
+  color: transparent;
+  padding: 0 2px;
+  border-radius: 2px;
+  line-height: 1.4;
+}
+
+.tab-col-num--filled {
+  background: #fff;
+  color: #111;
+}
+.tab-col-num--muted {
+  background: #fff;
+  color: #999;
+}
+.tab-col-num--bend {
+  background: #fff;
+  color: #b45309;  /* dark amber — legible on white */
+}
+
+/* Vibrato: green tint */
+.tab-col-num--vibrato { background: #fff; color: #059669; }
+/* Harmonic: violet tint */
+.tab-col-num--harm    { background: #fff; color: #7c3aed; }
+/* Palm mute: text dimmed — the PM badge on the column header does the heavy lifting */
+.tab-col-num--pm      { background: #fff; color: #0369a1; }
+
+/* Selected state */
+.tab-col--selected .tab-col-num--filled,
+.tab-col--selected .tab-col-num--vibrato,
+.tab-col--selected .tab-col-num--harm,
+.tab-col--selected .tab-col-num--pm      { background: #dbeafe; color: #1d4ed8; }
+.tab-col--selected .tab-col-num--muted   { background: #dbeafe; color: #3b82f6; }
+.tab-col--selected .tab-col-num--bend    { background: #dbeafe; color: #1d4ed8; }
+
+/* Playing state */
+.tab-col--playing .tab-col-num--filled,
+.tab-col--playing .tab-col-num--muted,
+.tab-col--playing .tab-col-num--bend,
+.tab-col--playing .tab-col-num--vibrato,
+.tab-col--playing .tab-col-num--harm,
+.tab-col--playing .tab-col-num--pm      { background: #dcfce7; color: #166534; }
+
+/* ── Palm-mute column badge ───────────────────────────────────────────────── */
+
+.tab-col-pm-badge {
+  font-size: 6px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #0369a1;
+  line-height: 1;
+  margin-top: 1px;
+  font-family: 'Arial', sans-serif;
+  text-transform: uppercase;
+}
+
+/* ── Articulation connector ───────────────────────────────────────────────── */
+
+/* Sits between the previous column's last pixel and this column's fret number */
+.tab-art-conn {
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  background: #fff;         /* lifts off the string line */
+  line-height: 1;
+  pointer-events: none;
+  font-size: 10px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* Hammer-on / pull-off: italic convention */
+.tab-art-conn--hammer,
+.tab-art-conn--pulloff { font-style: italic; font-family: 'Georgia', serif; }
+
+/* Slides: upright, slightly larger */
+.tab-art-conn--slide-up,
+.tab-art-conn--slide-down {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 400;
+  color: #555;
+}
+
+/* ── + col / + bar buttons ────────────────────────────────────────────────── */
+
+.tab-add-col {
+  flex-shrink: 0;
+  align-self: stretch;
+  background: none;
+  border: 1px dashed #ccc;
+  border-radius: 3px;
+  color: #bbb;
+  font-size: 16px;
+  width: 26px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 3px;
+  transition: border-color 0.1s, color 0.1s;
+}
+.tab-add-col:hover { border-color: #2563eb; color: #2563eb; }
+
+.tab-add-bar {
+  flex-shrink: 0;
+  align-self: center;
+  background: none;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  color: #bbb;
+  font-size: 12px;
+  padding: 6px 12px;
+  cursor: pointer;
+  margin: 32px 0 0 8px;
+  white-space: nowrap;
+  transition: border-color 0.1s, color 0.1s;
+}
+.tab-add-bar:hover { border-color: #2563eb; color: #2563eb; }
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .tab-toolbar { padding: 4px 8px; }
+  .tab-tb-group { padding: 2px 8px 2px 0; margin-right: 8px; }
+  .tab-bpm-slider { width: 60px; }
+  .tab-fb-cell { width: 30px; height: 28px; }
+  .tab-fb-fret-label { width: 30px; }
+}
+
+/* ── OCR preview modal ───────────────────────────────────────────────────── */
+
+.ocr-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.ocr-modal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: min(860px, 95vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.ocr-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ocr-modal-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.ocr-modal-hint {
+  font-size: 11px;
+  color: var(--text-2);
+  margin: 0;
+}
+
+.ocr-modal-hint code {
+  font-family: monospace;
+  background: var(--bg-base);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.ocr-modal-textarea {
+  flex: 1;
+  min-height: 320px;
+  resize: vertical;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  background: var(--bg-base);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+  outline: none;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.ocr-modal-textarea:focus { border-color: var(--accent, #4a9eff); }
+
+.ocr-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ocr-modal-count {
+  font-size: 12px;
+  color: #5cb85c;
+  font-weight: 600;
+}
+
+.ocr-modal-count--none { color: var(--text-2); }
+
+.ocr-modal-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.ocr-section {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ocr-section--ok { border-color: #3a7a3a; background: rgba(92,184,92,0.06); }
+
+.ocr-section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}

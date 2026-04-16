@@ -43,6 +43,19 @@ const DBL_INLAY_FRETS = new Set([12]);
 
 const PAD = 6;
 
+// ── Modal interval fingerprints (P1–P7) ───────────────────────────────────
+// Semitone intervals between consecutive notes in each modal shape.
+// Used to validate that a pattern box is the correct 3NPS shape for the mode.
+const MODAL_FINGERPRINTS: Readonly<Record<number, readonly number[]>> = {
+  0: [2, 2, 1, 2, 2, 2, 1], // P1 Ionian
+  1: [2, 1, 2, 2, 2, 1, 2], // P2 Dorian
+  2: [1, 2, 2, 2, 1, 2, 2], // P3 Phrygian
+  3: [2, 2, 2, 1, 2, 2, 1], // P4 Lydian
+  4: [2, 2, 1, 2, 2, 1, 2], // P5 Mixolydian
+  5: [2, 1, 2, 2, 1, 2, 2], // P6 Aeolian
+  6: [1, 2, 2, 1, 2, 2, 2], // P7 Locrian
+};
+
 const PATTERN_COLORS = [
   { stroke: '#22d3ee', fill: 'rgba(34,  211, 238, 0.07)' },
   { stroke: '#f97316', fill: 'rgba(249, 115,  22, 0.07)' },
@@ -54,13 +67,14 @@ const PATTERN_COLORS = [
 ];
 
 interface PatternPosition {
-  index:  number;
-  center: number;
-  label:  string;
-  color:  { stroke: string; fill: string };
-  boxMin: number;
-  boxMax: number;
-  chipX:  number;   // px from left of fret-area container
+  index:     number;
+  center:    number;
+  label:     string;
+  patternId: string | null;   // "P1"–"P7" for diatonic modes; null otherwise
+  color:     { stroke: string; fill: string };
+  boxMin:    number;
+  boxMax:    number;
+  chipX:     number;   // px from left of fret-area container
   stringRanges: { minFret: number; maxFret: number }[];
 }
 
@@ -156,8 +170,15 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
 
   private selectKeyPattern() {
     const positions = this.computePositions();
-    const keyLabel  = NoteNames.get(this.props.keySig);
-    const idx       = positions.findIndex(p => p.label === keyLabel);
+    let idx: number;
+    if (this.props.mode <= 6) {
+      // Diatonic modes: use root-position prioritization from the spec
+      idx = this.findRootPatternIdx(positions);
+    } else {
+      // Pentatonic / blues / harmonic minor: match by note name (existing behaviour)
+      const keyLabel = NoteNames.get(this.props.keySig);
+      idx = positions.findIndex(p => p.label === keyLabel);
+    }
     this.setState({ soloPattern: idx >= 0 ? idx : null });
   }
 
@@ -321,6 +342,113 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
     return cmds.join(' ');
   }
 
+  // ── Correction engine: validate a box's intra-string intervals ───────────
+  // Every interval between adjacent marked notes ON THE SAME STRING must appear
+  // in the mode's fingerprint.  Boxes from computePositions() always pass
+  // (notes come from isMarked()), but this guard prevents future regressions.
+  private boxMatchesFingerprint(pos: PatternPosition): boolean {
+    const fp = MODAL_FINGERPRINTS[this.props.mode];
+    if (!fp) return true; // non-diatonic mode → no fingerprint to check
+    const { tuning } = this.props;
+    const numStrings = tuning.length;
+    for (let row = 0; row < numStrings; row++) {
+      const si = numStrings - 1 - row;
+      const { minFret, maxFret } = pos.stringRanges[row];
+      const notes: number[] = [];
+      for (let f = minFret; f <= maxFret; f++) {
+        if (this.isMarked(tuning[si] + f)) notes.push(f);
+      }
+      for (let k = 1; k < notes.length; k++) {
+        if (!(fp as readonly number[]).includes(notes[k] - notes[k - 1])) return false;
+      }
+    }
+    return true;
+  }
+
+  // ── Root-position selection + correction-engine rules ────────────────────
+  // Returns the index in `positions` of the correct root-position box.
+  //
+  // Correction rules applied (in order):
+  //   OCT  Root-octave locking — find the absolute lowest root MIDI on the
+  //        fretboard; reject any box whose root is > 12 semitones above it.
+  //   FP   Fingerprint validation — box must match the modal interval fingerprint.
+  //   P1   Root is the FIRST note on the lowest available string (closest to nut).
+  //   P2   Root appears anywhere on the lowest string (closest to nut).
+  //   P3   Fallback: match by note-name label (original behaviour).
+  private findRootPatternIdx(positions: PatternPosition[]): number {
+    if (positions.length === 0) return -1;
+
+    const { keySig, tuning, numOfFrets } = this.props;
+    const numStrings = tuning.length;
+    const keyClass   = ((keySig % 12) + 12) % 12;
+    const nc = (midi: number) => ((midi % 12) + 12) % 12;
+    const lowestMidi = tuning[0];
+
+    // ── OCT: root-octave locking ──────────────────────────────────────────
+    // Scan every string for its first root occurrence to locate the absolute
+    // lowest-MIDI root on the neck.  Any candidate box whose root MIDI value
+    // is more than one octave (12 semitones) above this floor is invalid.
+    let lowestRootMidi = Infinity;
+    for (let si = 0; si < numStrings; si++) {
+      for (let f = 0; f <= numOfFrets; f++) {
+        const midi = tuning[si] + f;
+        if (nc(midi) === keyClass) {
+          if (midi < lowestRootMidi) lowestRootMidi = midi;
+          break; // only the first root per string needed
+        }
+      }
+    }
+    const maxAllowedRootMidi = lowestRootMidi === Infinity
+      ? Infinity
+      : lowestRootMidi + 12;
+    const withinOctave = (rootMidi: number) => rootMidi <= maxAllowedRootMidi;
+
+    type Candidate = { idx: number; fret: number; span: number };
+
+    // ── P1: root is the FIRST note on the lowest string ───────────────────
+    // Matches the spec examples ("7: D E F" → D is first on string 7).
+    const rootFirst: Candidate[] = [];
+    for (let i = 0; i < positions.length; i++) {
+      const pos   = positions[i];
+      if (!this.boxMatchesFingerprint(pos)) continue;          // FP check
+      const range    = pos.stringRanges[numStrings - 1];       // lowest string = last row
+      const rootMidi = lowestMidi + range.minFret;
+      if (nc(rootMidi) === keyClass && withinOctave(rootMidi)) { // OCT check
+        rootFirst.push({ idx: i, fret: range.minFret, span: pos.boxMax - pos.boxMin });
+      }
+    }
+    if (rootFirst.length > 0) {
+      rootFirst.sort((a, b) =>
+        a.fret !== b.fret ? a.fret - b.fret : a.span - b.span);
+      return rootFirst[0].idx;
+    }
+
+    // ── P2: root appears anywhere on the lowest string ────────────────────
+    const rootOnLowest: Candidate[] = [];
+    for (let i = 0; i < positions.length; i++) {
+      const pos   = positions[i];
+      if (!this.boxMatchesFingerprint(pos)) continue;          // FP check
+      const range = pos.stringRanges[numStrings - 1];
+      for (let f = range.minFret; f <= range.maxFret; f++) {
+        const rootMidi = lowestMidi + f;
+        if (nc(rootMidi) === keyClass && withinOctave(rootMidi)) { // OCT check
+          rootOnLowest.push({ idx: i, fret: f, span: pos.boxMax - pos.boxMin });
+          break;
+        }
+      }
+    }
+    if (rootOnLowest.length > 0) {
+      rootOnLowest.sort((a, b) =>
+        a.fret !== b.fret ? a.fret - b.fret : a.span - b.span);
+      return rootOnLowest[0].idx;
+    }
+
+    // ── P3: fallback — note-name label match ──────────────────────────────
+    const keyLabel = NoteNames.get(keySig);
+    const labelIdx = positions.findIndex(p => p.label === keyLabel);
+    return labelIdx >= 0 ? labelIdx : 0;
+  }
+
   computePositions(): PatternPosition[] {
     const { numOfFrets, tuning } = this.props;
     const numStrings = tuning.length;
@@ -362,7 +490,20 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
       const chipX        = ((boxMin - 1) + boxMax) / 2 * this.FRET_W;
       const stringRanges = this.computeStringRangesForBox(boxMin, boxMax);
 
-      positions.push({ index: idx, center, label, color, boxMin, boxMax, chipX, stringRanges });
+      positions.push({ index: idx, center, label, patternId: null, color, boxMin, boxMax, chipX, stringRanges });
+    }
+
+    // ── Assign P-IDs for the 7 diatonic modes (mode indices 0–6) ─────────
+    // Each modal box corresponds to one of P1 (Ionian) … P7 (Locrian).
+    // The root-position box gets the selected mode's P-number; subsequent
+    // boxes cycle through the remaining P-IDs in ascending order.
+    if (!isPenta && this.props.mode <= 6 && positions.length > 0) {
+      const rootIdx = this.findRootPatternIdx(positions);
+      const modeP   = this.props.mode; // 0→P1, 1→P2, …, 6→P7
+      for (let i = 0; i < positions.length; i++) {
+        const offset = ((i - rootIdx) % 7 + 7) % 7;
+        positions[i].patternId = `P${((modeP + offset) % 7) + 1}`;
+      }
     }
 
     return positions;
@@ -599,13 +740,16 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
 
             {/* Chips — absolutely positioned over their box's center */}
             <div className="fb-legend-chips">
-              {positions.map(({ index: j, label, color, chipX }) => {
+              {positions.map(({ index: j, label, patternId, color, chipX }) => {
                 const isSolo   = soloPattern === j;
                 const isDimmed = soloPattern !== null && !isSolo;
+                const chipLabel = patternId || label;
+                const chipTitle = patternId ? `${patternId} — ${label}` : label;
                 return (
                   <button
                     key={j}
                     className={`fb-pattern-chip${isSolo ? ' solo' : ''}${isDimmed ? ' dimmed' : ''}`}
+                    title={chipTitle}
                     style={{
                       left:        chipX,
                       borderColor: color.stroke,
@@ -616,7 +760,7 @@ export class Fretboard extends React.Component<IFretboard, FretboardState> {
                       soloPattern: s.soloPattern === j ? null : j,
                     }))}
                   >
-                    {label}
+                    {chipLabel}
                   </button>
                 );
               })}

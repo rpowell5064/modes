@@ -13,7 +13,7 @@ export class GuitarService {
         return 440 * Math.pow(2, (note - 69) / 12);
     }
 
-    private createKarplusStrong(note: number, brightness: number, decay: number, durationSec = 4): AudioBufferSourceNode {
+    private createKarplusStrong(note: number, brightness: number, decay: number, durationSec = 4, excitation = 0.65): AudioBufferSourceNode {
         const ctx = this.audioContext;
         const freq = this.noteFrequency(note);
         const sampleRate = ctx.sampleRate;
@@ -25,10 +25,11 @@ export class GuitarService {
         const audioBuffer = ctx.createBuffer(1, numSamples, sampleRate);
         const data = audioBuffer.getChannelData(0);
 
-        // Pluck excitation: white noise burst fills the delay line
+        // Pluck excitation: white noise burst fills the delay line.
+        // `excitation` controls the attack energy (0.65 = full pick, ~0.28 = soft hammer).
         const delayLine = new Float32Array(period);
         for (let i = 0; i < period; i++) {
-            delayLine[i] = (Math.random() * 2 - 1) * 0.65;
+            delayLine[i] = (Math.random() * 2 - 1) * excitation;
         }
 
         let pos = 0;
@@ -141,6 +142,255 @@ export class GuitarService {
         gain.connect(ctx.destination);
         osc.start(audioTime);
         osc.stop(audioTime + dur + 0.005);
+    }
+
+    /** Short muted / dead-string thump for 'x' notes. */
+    playMutedNote(audioTime: number): void {
+        const ctx = this.audioContext;
+        const dur = 0.055;
+        const bufSize = Math.floor(ctx.sampleRate * dur);
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+
+        // Low-pass + resonance to shape the muted thump
+        const lpf = ctx.createBiquadFilter();
+        lpf.type = 'lowpass';
+        lpf.frequency.value = 260;
+        lpf.Q.value = 2.5;
+
+        const body = ctx.createBiquadFilter();
+        body.type = 'peaking';
+        body.frequency.value = 120;
+        body.Q.value = 1.0;
+        body.gain.value = 6;
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, audioTime);
+        gain.gain.linearRampToValueAtTime(0.55, audioTime + 0.004);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioTime + dur);
+
+        src.connect(lpf);
+        lpf.connect(body);
+        body.connect(gain);
+        gain.connect(ctx.destination);
+        src.start(audioTime);
+        src.stop(audioTime + dur + 0.01);
+    }
+
+    /** Pitch-bend: cross-fades from baseMidi up to baseMidi+bendSemitones.
+     *  The source note fades quickly while the target pitch ramps in. */
+    playBendNoteAt(
+        baseMidi: number, bendSemitones: number, mode: SoundMode,
+        startTime: number, noteDuration: number, releaseDur = 0.10,
+    ): void {
+        const ctx = this.audioContext;
+        const targetMidi = baseMidi + bendSemitones;
+        const bendDur = Math.max(0.06, Math.min(0.22, noteDuration * 0.35));
+
+        // Source note — plucked, then quickly fades as the bend rises
+        {
+            const bufDur = Math.ceil(bendDur + 0.4);
+            const src = this.createKarplusStrong(baseMidi, 0.45, 0.9994, bufDur);
+            const chain = this.buildCleanChain(src);
+            const mg = ctx.createGain();
+            mg.gain.setValueAtTime(1, startTime);
+            mg.gain.exponentialRampToValueAtTime(0.0001, startTime + bendDur);
+            chain.connect(mg);
+            mg.connect(ctx.destination);
+            src.start(startTime);
+            const cleanupMs = (startTime - ctx.currentTime + bendDur + 0.4) * 1000;
+            setTimeout(() => {
+                try { src.stop(); }           catch (_) {}
+                try { src.disconnect(); }     catch (_) {}
+                try { mg.disconnect(); }      catch (_) {}
+            }, Math.max(cleanupMs, 50));
+        }
+
+        // Target note — ramps in over the same window, then sustains at full pitch
+        {
+            const bufDur = Math.ceil(noteDuration + releaseDur + 0.5);
+            const src = this.createKarplusStrong(targetMidi, 0.45, 0.9994, bufDur);
+            const chain = this.buildCleanChain(src);
+            const mg = ctx.createGain();
+            mg.gain.setValueAtTime(0, startTime);
+            mg.gain.linearRampToValueAtTime(1, startTime + bendDur);
+            mg.gain.setValueAtTime(1, startTime + noteDuration);
+            mg.gain.exponentialRampToValueAtTime(0.0001, startTime + noteDuration + releaseDur);
+            chain.connect(mg);
+            mg.connect(ctx.destination);
+            src.start(startTime);
+            const cleanupMs = (startTime - ctx.currentTime + noteDuration + releaseDur + 0.3) * 1000;
+            setTimeout(() => {
+                try { src.stop(); }           catch (_) {}
+                try { src.disconnect(); }     catch (_) {}
+                try { mg.disconnect(); }      catch (_) {}
+            }, Math.max(cleanupMs, 50));
+        }
+    }
+
+    /** Hammer-on: soft pluck (low excitation) with a brief finger-impact thud. */
+    playHammerOnAt(note: number, mode: SoundMode, startTime: number, noteDuration: number, releaseDur = 0.10): void {
+        const ctx = this.audioContext;
+        const bufDur = Math.ceil(noteDuration + releaseDur + 0.5);
+        // Low excitation = hammer strike energy, not pick attack
+        const source = this.createKarplusStrong(note, 0.50, 0.9996, bufDur, 0.28);
+        const chain  = this.buildCleanChain(source);
+
+        const masterGain = ctx.createGain();
+        masterGain.gain.setValueAtTime(0.78, startTime);
+        masterGain.gain.setValueAtTime(0.78, startTime + noteDuration);
+        masterGain.gain.exponentialRampToValueAtTime(0.0001, startTime + noteDuration + releaseDur);
+
+        chain.connect(masterGain);
+        masterGain.connect(ctx.destination);
+        source.start(startTime);
+
+        // Finger-impact transient
+        this.playFingerThud(startTime, 0.30);
+
+        const cleanupMs = (startTime - ctx.currentTime + noteDuration + releaseDur + 0.3) * 1000;
+        setTimeout(() => {
+            try { source.stop();           } catch (_) {}
+            try { source.disconnect();     } catch (_) {}
+            try { masterGain.disconnect(); } catch (_) {}
+        }, Math.max(cleanupMs, 50));
+    }
+
+    /** Pull-off: medium excitation with a subtle pop transient, slightly brighter. */
+    playPullOffAt(note: number, mode: SoundMode, startTime: number, noteDuration: number, releaseDur = 0.10): void {
+        const ctx = this.audioContext;
+        const bufDur = Math.ceil(noteDuration + releaseDur + 0.5);
+        // Pull-off is louder than hammer (finger pulls sideways, plucking the string)
+        const source = this.createKarplusStrong(note, 0.47, 0.9994, bufDur, 0.38);
+        const chain  = this.buildCleanChain(source);
+
+        const masterGain = ctx.createGain();
+        masterGain.gain.setValueAtTime(0.85, startTime);
+        masterGain.gain.setValueAtTime(0.85, startTime + noteDuration);
+        masterGain.gain.exponentialRampToValueAtTime(0.0001, startTime + noteDuration + releaseDur);
+
+        chain.connect(masterGain);
+        masterGain.connect(ctx.destination);
+        source.start(startTime);
+
+        // Lighter finger-release transient
+        this.playFingerThud(startTime, 0.18);
+
+        const cleanupMs = (startTime - ctx.currentTime + noteDuration + releaseDur + 0.3) * 1000;
+        setTimeout(() => {
+            try { source.stop();           } catch (_) {}
+            try { source.disconnect();     } catch (_) {}
+            try { masterGain.disconnect(); } catch (_) {}
+        }, Math.max(cleanupMs, 50));
+    }
+
+    /** Slide: cross-fades from fromMidi to toMidi with a sawtooth pitch-sweep in between. */
+    playSlideAt(
+        fromMidi: number, toMidi: number, mode: SoundMode,
+        startTime: number, noteDuration: number, releaseDur = 0.10,
+    ): void {
+        const ctx = this.audioContext;
+        const fromFreq = this.noteFrequency(fromMidi);
+        const toFreq   = this.noteFrequency(toMidi);
+        const slideDur = Math.max(0.06, Math.min(0.25, noteDuration * 0.40));
+
+        // Source note — plucked at start, fades as the slide begins
+        {
+            const bufDur = Math.ceil(slideDur + 0.4);
+            const src = this.createKarplusStrong(fromMidi, 0.45, 0.9994, bufDur);
+            const chain = this.buildCleanChain(src);
+            const mg = ctx.createGain();
+            mg.gain.setValueAtTime(1, startTime);
+            mg.gain.exponentialRampToValueAtTime(0.0001, startTime + slideDur);
+            chain.connect(mg);
+            mg.connect(ctx.destination);
+            src.start(startTime);
+            const cleanupMs = (startTime - ctx.currentTime + slideDur + 0.4) * 1000;
+            setTimeout(() => {
+                try { src.stop(); }       catch (_) {}
+                try { src.disconnect(); } catch (_) {}
+                try { mg.disconnect(); }  catch (_) {}
+            }, Math.max(cleanupMs, 50));
+        }
+
+        // Pitch-sweep oscillator — sawtooth blends the two pitches during the slide window
+        {
+            const osc  = ctx.createOscillator();
+            const lpf  = ctx.createBiquadFilter();
+            const mg   = ctx.createGain();
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(fromFreq, startTime);
+            osc.frequency.exponentialRampToValueAtTime(toFreq, startTime + slideDur);
+
+            lpf.type = 'lowpass';
+            lpf.frequency.value = 900;
+
+            mg.gain.setValueAtTime(0, startTime);
+            mg.gain.linearRampToValueAtTime(0.18, startTime + 0.008);
+            mg.gain.setValueAtTime(0.18, startTime + slideDur - 0.01);
+            mg.gain.exponentialRampToValueAtTime(0.0001, startTime + slideDur + 0.04);
+
+            osc.connect(lpf);
+            lpf.connect(mg);
+            mg.connect(ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + slideDur + 0.05);
+        }
+
+        // Target note — ramps in as slide lands, then sustains
+        {
+            const bufDur = Math.ceil(noteDuration + releaseDur + 0.5);
+            const src = this.createKarplusStrong(toMidi, 0.45, 0.9994, bufDur);
+            const chain = this.buildCleanChain(src);
+            const mg = ctx.createGain();
+            mg.gain.setValueAtTime(0, startTime);
+            mg.gain.linearRampToValueAtTime(1, startTime + slideDur);
+            mg.gain.setValueAtTime(1, startTime + noteDuration);
+            mg.gain.exponentialRampToValueAtTime(0.0001, startTime + noteDuration + releaseDur);
+            chain.connect(mg);
+            mg.connect(ctx.destination);
+            src.start(startTime);
+            const cleanupMs = (startTime - ctx.currentTime + noteDuration + releaseDur + 0.3) * 1000;
+            setTimeout(() => {
+                try { src.stop(); }       catch (_) {}
+                try { src.disconnect(); } catch (_) {}
+                try { mg.disconnect(); }  catch (_) {}
+            }, Math.max(cleanupMs, 50));
+        }
+    }
+
+    /** Short noise burst shaped to feel like a finger touching/leaving the string. */
+    private playFingerThud(audioTime: number, gainPeak: number): void {
+        const ctx = this.audioContext;
+        const dur = 0.040;
+        const bufSize = Math.floor(ctx.sampleRate * dur);
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+
+        const lpf = ctx.createBiquadFilter();
+        lpf.type = 'lowpass';
+        lpf.frequency.value = 400;
+        lpf.Q.value = 1.5;
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, audioTime);
+        gain.gain.linearRampToValueAtTime(gainPeak, audioTime + 0.003);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioTime + dur);
+
+        src.connect(lpf);
+        lpf.connect(gain);
+        gain.connect(ctx.destination);
+        src.start(audioTime);
+        src.stop(audioTime + dur + 0.005);
     }
 
     playNote(note: number, mode: SoundMode): void {

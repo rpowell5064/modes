@@ -65,7 +65,7 @@ export class Constants {
             },
             {
                 key: 2,
-                value: 'Phyrgian'
+                value: 'Phrygian'
             },
             {
                 key: 3,
