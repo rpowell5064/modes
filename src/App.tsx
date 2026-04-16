@@ -238,6 +238,30 @@ export default class App extends React.Component<{}, IModeState> {
           </div>
         </nav>
 
+        {/* ── Tools Panel — always mounted so it works on every page ─── */}
+        <div
+          className={`tools-panel-overlay${toolsPanelOpen ? ' tools-panel-overlay--open' : ''}`}
+          onClick={ () => this.setState({ toolsPanelOpen: false }) }
+        />
+        <div className={`tools-panel${toolsPanelOpen ? ' tools-panel--open' : ''}`}>
+          <div className="tools-panel-header">
+            <span className="tools-panel-title">Tools</span>
+            <button
+              className="tools-panel-close"
+              onClick={ () => this.setState({ toolsPanelOpen: false }) }
+              aria-label="Close tools panel"
+            >✕</button>
+          </div>
+          <MetronomeSection
+            guitarService={this.guitarService}
+            bpm={bpm}
+            timeSig={timeSig}
+            onPlayingChange={ active => this.setState({ metronomeActive: active }) }
+            onBeat={ this.handleMetronomeBeat.bind(this) }
+          />
+          <TunerSection guitarService={this.guitarService} tuning={this.state.tuning} />
+        </div>
+
         {/* ── Tab Editor page ──────────────────────────────────────────── */}
         {activePage === 'tab' && (
           <TabPage
@@ -341,30 +365,6 @@ export default class App extends React.Component<{}, IModeState> {
               </div>
 
             </div>{/* end playback-bar-body */}
-          </div>
-
-          {/* ── Slide-out Tools Panel ─────────────────────────────────── */}
-          <div
-            className={`tools-panel-overlay${toolsPanelOpen ? ' tools-panel-overlay--open' : ''}`}
-            onClick={ () => this.setState({ toolsPanelOpen: false }) }
-          />
-          <div className={`tools-panel${toolsPanelOpen ? ' tools-panel--open' : ''}`}>
-            <div className="tools-panel-header">
-              <span className="tools-panel-title">Tools</span>
-              <button
-                className="tools-panel-close"
-                onClick={ () => this.setState({ toolsPanelOpen: false }) }
-                aria-label="Close tools panel"
-              >✕</button>
-            </div>
-            <MetronomeSection
-              guitarService={this.guitarService}
-              bpm={bpm}
-              timeSig={timeSig}
-              onPlayingChange={ active => this.setState({ metronomeActive: active }) }
-              onBeat={ this.handleMetronomeBeat.bind(this) }
-            />
-            <TunerSection     guitarService={this.guitarService} tuning={this.state.tuning} />
           </div>
 
           <SongSearchSection
